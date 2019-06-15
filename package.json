@@ -1,0 +1,85 @@
+{
+  "name": "weds-node-edu",
+  "version": "1.0.0",
+  "description": "",
+  "private": true,
+  "egg": {
+    "typescript": true
+  },
+  "scripts": {
+    "start": "egg-scripts start --daemon --title=egg-server-weds-node-edu",
+    "stop": "egg-scripts stop --title=egg-server-weds-node-edu",
+    "dev": "egg-bin dev -r egg-ts-helper/register",
+    "debug": "egg-bin debug -r egg-ts-helper/register",
+    "test-local": "egg-bin test -r egg-ts-helper/register",
+    "test": "npm run lint -- --fix && npm run test-local",
+    "cov": "egg-bin cov -r egg-ts-helper/register",
+    "tsc": "ets && tsc -p tsconfig.json",
+    "ci": "npm run lint && npm run cov && npm run tsc",
+    "autod": "autod",
+    "lint": "tslint --project . -c tslint.json",
+    "clean": "ets clean"
+  },
+  "dependencies": {
+    "amqp": "^0.2.7",
+    "canvas": "^2.4.1",
+    "egg": "^2.6.1",
+    "egg-cors": "^2.1.2",
+    "egg-mq": "^0.1.0",
+    "egg-redis": "^2.3.0",
+    "egg-scripts": "^2.6.0",
+    "egg-sequelize": "^4.2.0",
+    "egg-session": "^3.1.0",
+    "egg-socket.io": "^4.1.5",
+    "egg-swagger-doc": "^2.2.2",
+    "egg-xlsx": "^0.1.1",
+    "ejsexcel": "^3.5.3",
+    "exceljs": "^1.8.0",
+    "html-pdf": "^2.2.0",
+    "html-to-image": "^0.1.0",
+    "install": "^0.12.2",
+    "jsdom": "^14.0.0",
+    "mysql2": "^1.6.5",
+    "npm": "^6.5.0",
+    "pg": "^7.7.1",
+    "pg-hstore": "^2.3.2",
+    "qiniu": "^7.2.1",
+    "rabbitmq": "0.0.2",
+    "sequelize-auto": "^0.4.29",
+    "tedious": "^6.2.0"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^12.2.3",
+    "@types/mocha": "^2.2.40",
+    "@types/node": "^7.0.12",
+    "@types/supertest": "^2.0.0",
+    "autod": "^3.0.1",
+    "autod-egg": "^1.1.0",
+    "egg": "^2.6.1",
+    "egg-bin": "^4.6.2",
+    "egg-ci": "^1.8.0",
+    "egg-emqtt": "^1.0.0",
+    "egg-mock": "^3.16.0",
+    "egg-ts-helper": "^1.11.0",
+    "moment": "^2.23.0",
+    "node-xlsx": "^0.12.1",
+    "tslib": "^1.9.3",
+    "tslint": "^4.0.0",
+    "typescript": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=8.9.0"
+  },
+  "ci": {
+    "version": "8"
+  },
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "eslintIgnore": [
+    "coverage"
+  ],
+  "author": "",
+  "license": "MIT"
+}
