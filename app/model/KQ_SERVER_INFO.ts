@@ -1,18 +1,4 @@
 /* jshint indent: 2 */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 module.exports = app => {
   const {
     STRING,
@@ -30,6 +16,10 @@ module.exports = app => {
       allowNull: true
     },
     DB_NAME: {
+      type: STRING,
+      allowNull: true
+    },
+    ESCAPE_NAME: {
       type: STRING,
       allowNull: true
     },
@@ -54,6 +44,10 @@ module.exports = app => {
       allowNull: true
     },
     SERVER_STATE: {
+      type: STRING,
+      allowNull: true
+    },
+    INSTANCE_NAME: {
       type: STRING,
       allowNull: true
     },

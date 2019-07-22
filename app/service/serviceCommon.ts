@@ -1,13 +1,16 @@
 import { Service } from 'egg';
-import { IResult } from '../extend/helper';
-var Sequelize = require('sequelize');
+// @ts-ignore
+import { IResult, enumMapTableName } from '../extend/helper';
+import moment = require('moment');
 
 export default class CommonService extends Service {
 
   /**
-   * # 遍历任务表
+   * # 根据部门查人员
    */
-  async loopTask() {
+
+  async getUserByDep(depData) {
+    // @ts-ignore
     const { ctx } = this;
     let jResult: IResult
       = {
@@ -16,92 +19,36 @@ export default class CommonService extends Service {
       data: null
     };
     try {
-      // @ts-ignore
-      let task = await ctx.model.KQJOBINFO.findAll({
+      let arrDep = depData.split(',');
+      let arrs = await ctx.model.DtUser.findAll({
+        attributes: ['user_serial'],
         where: {
-          TASK_STATE: [0, 2, 4],
+          user_dep: {
+            $in: arrDep,
+          }
         }
       });
-      jResult.data = task;
+      let arr = await arrs.map(i => i.get({ plain: true }));
+
+      jResult.data = arr;
+
       return jResult;
     } catch (err) {
       jResult.code = -1;
       jResult.msg = `${err.stack}`;
+      ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + jResult.msg);
       jResult.data = null;
       return jResult;
     }
   }
 
-
-  async loadServerIntoRedis() {
-    const { ctx, app } = this;
-    let jResult: IResult
-      = {
-      code: 0,
-      msg: '',
-      data: null
-    };
-    try {
-      // @ts-ignore
-
-      let arrServer = await ctx.model.KQSERVERINFO.findAll();
-      for (let i = 0; i < arrServer.length; i++) {
-        let curServer = arrServer[i];
-        let curServerId = curServer.SERVER_ID;
-        let serverName = curServer.SERVER_NAME;
-        let dbName = curServer.DB_NAME;
-        let port = curServer.DB_PORT;
-        let userName = curServer.USER_NAME;
-        let pwd = curServer.USER_PWD;
-        let instanceName = curServer.INSTANCE_NAME;
-        let option = {};
-        // @ts-ignore
-        option.host = serverName;
-        // @ts-ignore
-        option.dialectOptions = {
-          instanceName: instanceName,
-        };
-        // @ts-ignore
-        option.port = port;
-        // @ts-ignore
-        option.dialect = 'mssql';
-
-        // @ts-ignore
-        option.pool = {
-          max: 5,
-          min: 0,
-          idle: 10000,
-        };
-        let connectInfo = {};
-        // @ts-ignore
-        connectInfo.dbName = dbName;
-        // @ts-ignore
-        connectInfo.userName = userName;
-        // @ts-ignore
-        connectInfo.pwd = pwd;
-        // @ts-ignore
-        connectInfo.option = option;
-        app.redis.set(curServerId, JSON.stringify(connectInfo))
-        var sequelize = new Sequelize(dbName, userName, pwd, option);
-        sequelize.query('select * from dt_user');
-
-
-      }
-      return jResult;
-    } catch (err) {
-      jResult.code = -1;
-      jResult.msg = `${err.stack}`;
-      jResult.data = null;
-      return jResult;
-    }
-
-  }
 
   /**
-   * # 同步数据
+   * # 根据serverId查服务器信息
    */
-  async syncData(startDate, endDate, userData, serverId) {
 
+  async getServerByServerId(id) {
+    // @ts-ignore
     const { ctx } = this;
     let jResult: IResult
       = {
@@ -110,31 +57,74 @@ export default class CommonService extends Service {
       data: null
     };
     try {
-      // @ts-ignore
-      jResult = await this.getServerInfoByServerId(serverId);
-      if (-1 === jResult.code) {
-        return jResult;
-      }
-      let server = jResult.data;
-      server.
-
-        jResult.data = server;
+      let server = await ctx.model.KQSERVERINFO.findOne({
+        where: {
+          SERVER_ID: id,
+        }
+      });
+      jResult.data = server;
       return jResult;
     } catch (err) {
       jResult.code = -1;
       jResult.msg = `${err.stack}`;
+      ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + jResult.msg);
       jResult.data = null;
       return jResult;
     }
+  }
 
+  // 驼峰转换下划线
+  toLine(name) {
+    let leftName = name.slice(0, 1);
+    let rightName = name.slice(1);
+    return leftName.toLowerCase() + rightName.replace(/([A-Z])/g, "_$1").toLowerCase();
   }
 
   /**
-   * # 调用数据分析地址
+   * # 格式化查询条件,将变量替换为值 
    */
-  callAnalyse(url) {
+  // @ts-ignore
+  formatCondition(depData, userData, startDate, endDate, year, month, condition, offset) {
+    // @ts-ignore
+    const { ctx } = this;
+    let jResult: IResult
+      = {
+      code: 0,
+      msg: '',
+      data: null
+    };
+    try {
+      let sCondition = JSON.stringify(condition);
 
+      let yearMonth = `${year}-${month}`;
+      let beginMonth = moment(yearMonth).add(-1, 'month').format('YYYY-MM');
+      let endMonth = moment(yearMonth).add(1, 'month').format('YYYY-MM');
+      startDate = moment(startDate).add(offset * -2, 'day').format('YYYY-MM-DD HH:mm:ss');
+      endDate = moment(endDate).add(offset + 2, 'day').format('YYYY-MM-DD HH:mm:ss');
+      sCondition = sCondition.replace('@dep', `${depData}`)
+        .replace('@user', userData).replace(`["`, `[`).replace(`"]`, `]`)
+        .replace('@begin_date', startDate)
+        .replace('@end_date', endDate)
+        .replace('@begin_month', beginMonth)
+        .replace('@end_month', endMonth);
+      jResult.data = JSON.parse(sCondition);
+      return jResult;
+    } catch (err) {
+      jResult.code = -1;
+      jResult.msg = `${err.stack}`;
+      ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + jResult.msg);
+      jResult.data = null;
+      return jResult;
+    }
   }
 
+  /**
+   * # 数组中是否有重复值,有为true
+   */
+  checkDuplicationNormal<T>(arr: T[]) {
+    return arr.some((val, idx) => {
+      return arr.includes(val, idx + 1);
+    });
+  }
 }
 

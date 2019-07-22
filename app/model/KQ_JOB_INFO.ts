@@ -1,4 +1,3 @@
-/* jshint indent: 2 */
 
 module.exports = app => {
   const {
@@ -42,14 +41,34 @@ module.exports = app => {
       allowNull: true
     },
     TASK_START: {
-      type: DATE,
+      type: STRING,
       allowNull: true
     },
     TASK_END: {
-      type: DATE,
-      allowNull: true
+      type: STRING,
+      allowNull: true,
     },
     GLY_NO: {
+      type: STRING,
+      allowNull: true
+    },
+    DEP_DATA: {
+      type: STRING,
+      allowNull: true
+    },
+    TASK_YEAR: {
+      type: INTEGER,
+      allowNull: true
+    },
+    TASK_MONTH: {
+      type: INTEGER,
+      allowNull: true
+    },
+    TASK_DAY: {
+      type: INTEGER,
+      allowNull: true
+    },
+    remarks: {
       type: STRING,
       allowNull: true
     },

@@ -1,10 +1,10 @@
 exports.schedule = {
-    type: 'all',
+    type: 'worker',
     // cron: '0 0 3 * * *',
-    interval: '1s',
+    interval: '5s',
     // immediate: true,
 };
 
 exports.task = async function (ctx) {
-   await ctx.service.serviceCommon.loadServerIntoRedis();
+    await ctx.service.serviceMain.loadServerIntoRedis();
 };
