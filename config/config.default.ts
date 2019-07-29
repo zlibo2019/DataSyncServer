@@ -15,24 +15,24 @@ export default (appInfo: EggAppInfo) => {
   };
 
   config.sequelize = {
-    dialect: 'mssql',
-    database: 'scm_main_2',
-    timezone: '+08:00',
+    dialect: 'mssql',     // 数据库类型
+    database: 'scm_main_2',   //数据库名称
+    timezone: '+08:00',       
     pool: {
       max: 5000,
       min: 0,
       idle: 100000,
     },
-    host: '10.1.0.6',
-    port: 1433,
-    username: 'sa',
-    password: '123',
+    host: '10.1.0.6',     // 服务器
+    port: 1433,           // 端口 
+    username: 'sa',        // 用户名
+    password: '123',       // 密码
     dialectOptions: {
-      instanceName: 'sql2008',
-      connectTimeout: 60000,
-      requestTimeout: 999999,
+      instanceName: 'sql2008',    //实例名
+      connectTimeout: 60000,      // 连接超时时间
+      requestTimeout: 999999,     // 请求超时时间
     },
-    logging: false,
+    logging: false,                  // 是否打印sql日志
   };
 
   config.redis = {
