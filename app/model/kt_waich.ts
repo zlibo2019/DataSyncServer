@@ -12,7 +12,14 @@ module.exports = app => {
       primaryKey: true,
       get: function () {
         // @ts-ignore
-        return moment(this.getDataValue('jbrq')).utcOffset(0).format('YYYY-MM-DD HH:mm:ss');
+        let value = this.getDataValue('jbrq');
+        let res;
+        if (null === value || '' === value) {
+          res = null;
+        } else {
+          res = moment(value).utcOffset(0).format('YYYY-MM-DD');
+        }
+        return res;
       },
     },
     user_serial: {
@@ -31,7 +38,14 @@ module.exports = app => {
       allowNull: true,
       get: function () {
         // @ts-ignore
-        return moment(this.getDataValue('kssj')).utcOffset(0).format('YYYY-MM-DD HH:mm:ss');
+        let value = this.getDataValue('kssj');
+        let res;
+        if (null === value || '' === value) {
+          res = null;
+        } else {
+          res = moment(value).utcOffset(0).format('YYYY-MM-DD HH:mm:ss');
+        }
+        return res;
       },
     },
     jssj: {
@@ -39,7 +53,14 @@ module.exports = app => {
       allowNull: true,
       get: function () {
         // @ts-ignore
-        return moment(this.getDataValue('jssj')).utcOffset(0).format('YYYY-MM-DD HH:mm:ss');
+        let value = this.getDataValue('jssj');
+        let res;
+        if (null === value || '' === value) {
+          res = null;
+        } else {
+          res = moment(value).utcOffset(0).format('YYYY-MM-DD HH:mm:ss');
+        }
+        return res;
       },
     },
     jsjg: {

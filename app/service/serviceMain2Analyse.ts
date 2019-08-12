@@ -70,7 +70,7 @@ export default class Main2AnalyseService extends Service {
    * isForce 是否强制删除原表 1是0否
    */
   // @ts-ignore
-  async insertTable(sequelize, root, tableName, condition, taskNo) {
+  async insertTable(sequelize, root, tableName, condition, isHavePrimaryKey, taskNo) {
     // @ts-ignore
     const { ctx } = this;
     let jResult: IResult
@@ -112,6 +112,11 @@ export default class Main2AnalyseService extends Service {
         ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + msg);
       }
 
+      // 如果没有主键,去掉系统默认填加的id
+      if (undefined !== isHavePrimaryKey && isHavePrimaryKey === false) {
+        eval(`ctx.model.${tableName}.removeAttribute('id')`);
+      }
+      
       let functionString;
       if (undefined !== condition) {
         condition.logging = false;
@@ -119,6 +124,9 @@ export default class Main2AnalyseService extends Service {
       } else {
         functionString = `ctx.model.${tableName}.findAll()`;
       }
+
+
+
       let arrs = await eval(functionString); // await ctx.model.DtUser.findAll();
       arr = await arrs.map(i => i.get({ plain: true }));
       ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + ` ${taskNo}:${tableName}记录总数:${arr.length}`);
@@ -136,7 +144,7 @@ export default class Main2AnalyseService extends Service {
       jResult.msg = `taskNo:${taskNo} ${tableNameLine} 表错误:${err.stack}`;
       ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + jResult.msg);
 
-      // ctx.logger.error(err.sql);
+      ctx.logger.error(err.sql);
       // ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss")  + JSON.stringify(arr));
       jResult.data = null;
       return jResult;
@@ -180,19 +188,22 @@ export default class Main2AnalyseService extends Service {
         // @ts-ignore
         let curTableName = arrTable[i].name;
         // @ts-ignore
+        let isHavePrimaryKey = arrTable[i].isHavePrimaryKey;
+        // @ts-ignore
         let curTableCondition;
         if (undefined !== arrTable[i].condition) {
           let condition = arrTable[i].condition;
           let offset = 2;
           // @ts-ignore
-          jResult = ctx.service.serviceCommon.formatCondition(0, userData, startDate, endDate, year, month, condition, offset);
+          jResult = ctx.service.serviceCommon.formatCondition(
+            0, userData, startDate, endDate, year, month, condition, offset
+          );
           if (jResult.code === -1) {
             return jResult;
           }
           curTableCondition = jResult.data;
-
         }
-        promiseArr.push(eval(`this.insertTable(sequelize, root, curTableName,curTableCondition,taskNo)`));
+        promiseArr.push(eval(`this.insertTable(sequelize, root, curTableName,curTableCondition,isHavePrimaryKey,taskNo)`));
       }
 
       let res = await Promise.all(promiseArr);

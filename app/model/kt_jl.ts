@@ -19,7 +19,14 @@ module.exports = app => {
       primaryKey: true,
       get: function () {
         // @ts-ignore
-        return moment(this.getDataValue('sj')).utcOffset(0).format('YYYY-MM-DD HH:mm:ss');
+        let value = this.getDataValue('sj');
+        let res;
+        if (null === value || '' === value) {
+          res = null;
+        } else {
+          res = moment(value).utcOffset(0).format('YYYY-MM-DD HH:mm:ss');
+        }
+        return res;
       },
     },
     user_serial: {

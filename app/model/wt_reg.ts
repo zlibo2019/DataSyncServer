@@ -38,7 +38,14 @@ module.exports = app => {
       allowNull: true,
       get: function () {
         // @ts-ignore
-        return moment(this.getDataValue('reg_time')).utcOffset(0).format('YYYY-MM-DD HH:mm:ss');
+        let value = this.getDataValue('reg_time');
+        let res;
+        if (null === value || '' === value) {
+          res = null;
+        } else {
+          res = moment(value).utcOffset(0).format('YYYY-MM-DD HH:mm:ss');
+        }
+        return res;
       },
     },
     zhangtao_rq: {
@@ -109,10 +116,10 @@ module.exports = app => {
       type: INTEGER,
       allowNull: true
     },
-    bh: {
-      type: INTEGER,
-      allowNull: false
-    },
+    // bh: {
+    //   type: INTEGER,
+    //   allowNull: false
+    // },
     reg_company: {
       type: STRING,
       allowNull: true

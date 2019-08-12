@@ -25,7 +25,14 @@ module.exports = app => {
       autoIncrement: false,
       get: function () {
         // @ts-ignore
-        return moment(this.getDataValue('a_rq')).utcOffset(0).format('YYYY-MM-DD HH:mm:ss');
+        let value = this.getDataValue('a_rq');
+        let res;
+        if (null === value || '' === value) {
+          res = null;
+        } else {
+          res = moment(value).utcOffset(0).format('YYYY-MM-DD HH:mm:ss');
+        }
+        return res;
       },
     },
     b_rq: {
@@ -35,7 +42,14 @@ module.exports = app => {
       autoIncrement: false,
       get: function () {
         // @ts-ignore
-        return moment(this.getDataValue('b_rq')).utcOffset(0).format('YYYY-MM-DD HH:mm:ss');
+        let value = this.getDataValue('b_rq');
+        let res;
+        if (null === value || '' === value) {
+          res = null;
+        } else {
+          res = moment(value).utcOffset(0).format('YYYY-MM-DD HH:mm:ss');
+        }
+        return res;
       },
     },
     a_bc: {
@@ -59,7 +73,7 @@ module.exports = app => {
       allowNull: true
     }
   }
-  
+
   let sequelize;
   if (!app.env) {
     sequelize = app;

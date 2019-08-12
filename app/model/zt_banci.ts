@@ -6,14 +6,15 @@ module.exports = app => {
     INTEGER,
   } = app.Sequelize;
   const columns = {
-    id: {
-      type: INTEGER,
-      allowNull: false,
-      primaryKey: true,
-      autoIncrement: false
-    },
+    // id: {
+    //   type: INTEGER,
+    //   allowNull: false,
+    //   primaryKey: true,
+    //   autoIncrement: false
+    // },
     bh: {
       type: STRING,
+      primaryKey: true,
       allowNull: true
     },
     mc: {
@@ -41,7 +42,7 @@ module.exports = app => {
       allowNull: true
     }
   }
-  
+
   let sequelize;
   if (!app.env) {
     sequelize = app;

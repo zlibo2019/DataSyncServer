@@ -36,6 +36,7 @@ export default class TaskService extends Service {
           let isConflict = ctx.service.serviceCommon.checkDuplicationNormal(arrAll);
           if (isConflict && isConflict === true) {
             jResult.data = true;
+            ctx.logger.error('冲突任务:' +  arrJob[i].TASK_NO);
             ctx.logger.error('冲突人员:' + arrAll);
             return jResult;
           }

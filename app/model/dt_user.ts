@@ -5,7 +5,6 @@ module.exports = app => {
     STRING,
     INTEGER,
     BIGINT,
-    DATE,
   } = app.Sequelize;
 
   const columns = {
@@ -39,8 +38,19 @@ module.exports = app => {
       allowNull: true
     },
     user_workday: {
-      type: DATE,
-      allowNull: true
+      type: STRING,
+      allowNull: true,
+      get: function () {
+        // @ts-ignore
+        let value = this.getDataValue('user_workday');
+        let res;
+        if (null === value || '' === value) {
+          res = null;
+        } else {
+          res = moment(value).utcOffset(0).format('YYYY-MM-DD HH:mm:ss');
+        }
+        return res;
+      },
     },
     user_duty: {
       type: STRING,
@@ -59,24 +69,68 @@ module.exports = app => {
       allowNull: true
     },
     pwd_begin: {
-      type: DATE,
-      allowNull: true
+      type: STRING,
+      allowNull: true,
+      get: function () {
+        // @ts-ignore
+        let value = this.getDataValue('pwd_begin');
+        let res;
+        if (null === value || '' === value) {
+          res = null;
+        } else {
+          res = moment(value).utcOffset(0).format('YYYY-MM-DD HH:mm:ss');
+        }
+        return res;
+      },
     },
     pwd_end: {
-      type: DATE,
-      allowNull: true
+      type: STRING,
+      allowNull: true,
+      get: function () {
+        // @ts-ignore
+        let value = this.getDataValue('pwd_end');
+        let res;
+        if (null === value || '' === value) {
+          res = null;
+        } else {
+          res = moment(value).utcOffset(0).format('YYYY-MM-DD HH:mm:ss');
+        }
+        return res;
+      },
     },
     user_type: {
       type: INTEGER,
       allowNull: true
     },
     pact_begin: {
-      type: DATE,
-      allowNull: true
+      type: STRING,
+      allowNull: true,
+      get: function () {
+        // @ts-ignore
+        let value = this.getDataValue('pact_begin');
+        let res;
+        if (null === value || '' === value) {
+          res = null;
+        } else {
+          res = moment(value).utcOffset(0).format('YYYY-MM-DD HH:mm:ss');
+        }
+        return res;
+      },
     },
     pact_end: {
-      type: DATE,
-      allowNull: true
+      type: STRING,
+      allowNull: true,
+      get: function () {
+        // @ts-ignore
+        let value = this.getDataValue('pact_end');
+        let res;
+        if (null === value || '' === value) {
+          res = null;
+        } else {
+          res = moment(value).utcOffset(0).format('YYYY-MM-DD HH:mm:ss');
+        }
+        return res;
+      },
     },
     user_level: {
       type: INTEGER,
@@ -103,8 +157,19 @@ module.exports = app => {
       allowNull: true
     },
     user_birthday: {
-      type: DATE,
-      allowNull: true
+      type: STRING,
+      allowNull: true,
+      get: function () {
+        // @ts-ignore
+        let value = this.getDataValue('user_birthday');
+        let res;
+        if (null === value || '' === value) {
+          res = null;
+        } else {
+          res = moment(value).utcOffset(0).format('YYYY-MM-DD HH:mm:ss');
+        }
+        return res;
+      },
     },
     user_id: {
       type: STRING,
@@ -155,8 +220,19 @@ module.exports = app => {
       allowNull: true
     },
     xf_time: {
-      type: DATE,
-      allowNull: true
+      type: STRING,
+      allowNull: true,
+      get: function () {
+        // @ts-ignore
+        let value = this.getDataValue('xf_time');
+        let res;
+        if (null === value || '' === value) {
+          res = null;
+        } else {
+          res = moment(value).utcOffset(0).format('YYYY-MM-DD HH:mm:ss');
+        }
+        return res;
+      },
     },
     xf_jiange: {
       type: INTEGER,
@@ -171,7 +247,14 @@ module.exports = app => {
       allowNull: true,
       get: function () {
         // @ts-ignore
-        return moment(this.getDataValue('user_sj')).utcOffset(0).format('YYYY-MM-DD HH:mm:ss');
+        let value = this.getDataValue('user_sj');
+        let res;
+        if (null === value || '' === value) {
+          res = null;
+        } else {
+          res = moment(value).utcOffset(0).format('YYYY-MM-DD HH:mm:ss');
+        }
+        return res;
       },
     },
     user_rank: {

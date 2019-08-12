@@ -16,19 +16,19 @@ export default (appInfo: EggAppInfo) => {
 
   config.sequelize = {
     dialect: 'mssql',     // 数据库类型
-    database: 'scm_main_2',   //数据库名称
-    timezone: '+08:00',       
+    database: 'scm_main_sjfx',   //数据库名称
+    timezone: '+08:00',
     pool: {
       max: 5000,
       min: 0,
       idle: 100000,
     },
-    host: '10.1.0.6',     // 服务器
+    host: '10.9.0.19',     // 服务器
     port: 1433,           // 端口 
     username: 'sa',        // 用户名
-    password: '123',       // 密码
+    password: 'test123456',       // 密码
     dialectOptions: {
-      instanceName: 'sql2008',    //实例名
+      instanceName: 'sqlexpress',    //实例名
       connectTimeout: 60000,      // 连接超时时间
       requestTimeout: 999999,     // 请求超时时间
     },
@@ -76,7 +76,7 @@ export default (appInfo: EggAppInfo) => {
     consoleLevel: 'ERROR',
   };
 
-  
+
   config.program = {
     current_ip: '10.1.0.16',
     current_port: 7001,
@@ -156,6 +156,7 @@ export default (appInfo: EggAppInfo) => {
       },
       {
         name: 'ZtShid',
+        isHavePrimaryKey: false,
       },
       {
         name: 'KtJjr',

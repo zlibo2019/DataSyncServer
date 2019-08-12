@@ -6,12 +6,12 @@ module.exports = app => {
     INTEGER,
   } = app.Sequelize;
   const columns = {
-    bh: {
-      type: INTEGER,
-      allowNull: false,
-      primaryKey: true,
-      autoIncrement: false
-    },
+    // bh: {
+    //   type: INTEGER,
+    //   allowNull: false,
+    //   primaryKey: true,
+    //   autoIncrement: false
+    // },
     parent: {
       type: STRING,
       allowNull: true

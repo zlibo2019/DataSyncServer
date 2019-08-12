@@ -67,7 +67,7 @@ export default class Analyse2MainService extends Service {
   /**
    * # 反向同步单表
    */
-  async reverseInsertTable(sequelize, root, tableName, condition, taskNo) {
+  async reverseInsertTable(sequelize, root, tableName, condition, isHavePrimaryKey, taskNo) {
     // @ts-ignore
     const { ctx } = this;
     let jResult: IResult
@@ -87,6 +87,12 @@ export default class Analyse2MainService extends Service {
       // @ts-ignore
       tableNameLine = ctx.service.serviceCommon.toLine(tableName);
       const table = await sequelize.import(`${root}\\model\\${tableNameLine}`);
+
+
+      // 如果没有主键,去掉系统默认填加的id
+      if (undefined !== isHavePrimaryKey && isHavePrimaryKey === false) {
+        table.removeAttribute('id');
+      }
 
       let arrs;
       if (undefined !== condition && null !== condition) {
@@ -230,6 +236,13 @@ export default class Analyse2MainService extends Service {
       // // @ts-ignore
       // res = await ctx.model.query(sql, { transaction });
 
+      // 没有则创建表
+      res = await ctx.model.KtJlTmp.sync();
+      if (undefined !== res) {
+        ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + `kt_jl_tmp创建失败`);
+      } else {
+        ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + `kt_jl_tmp创建成功`);
+      }
 
       // 清空表
       res = await ctx.model.KtJlTmp.destroy({
@@ -318,6 +331,8 @@ export default class Analyse2MainService extends Service {
         // @ts-ignore
         let curTableName = arrTable[i].name;
         // @ts-ignore
+        let isHavePrimaryKey = arrTable[i].isHavePrimaryKey;
+        // @ts-ignore
         let curTableCondition;
         if (undefined !== arrTable[i].condition && null !== arrTable[i].condition) {
           let condition = arrTable[i].condition;
@@ -328,7 +343,7 @@ export default class Analyse2MainService extends Service {
           }
           curTableCondition = jResult.data;
         }
-        promiseArr.push(eval(`this.reverseInsertTable(sequelize, root, curTableName,curTableCondition,taskNo)`));
+        promiseArr.push(eval(`this.reverseInsertTable(sequelize, root, curTableName,curTableCondition,isHavePrimaryKey,taskNo)`));
       }
 
       promiseArr.push(eval(`this.reverseUpdateTable(sequelize, root,taskNo)`));

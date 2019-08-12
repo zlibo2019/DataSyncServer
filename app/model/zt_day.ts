@@ -19,7 +19,14 @@ module.exports = app => {
       primaryKey: true,
       get: function () {
         // @ts-ignore
-        return moment(this.getDataValue('dkrq')).format('YYYY-MM-DD');
+        let value = this.getDataValue('dkrq');
+        let res;
+        if (null === value || '' === value) {
+          res = null;
+        } else {
+          res = moment(value).utcOffset(0).format('YYYY-MM-DD');
+        }
+        return res;
       },
     },
     yingchu1: {
