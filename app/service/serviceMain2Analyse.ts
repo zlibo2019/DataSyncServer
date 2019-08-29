@@ -40,13 +40,16 @@ export default class Main2AnalyseService extends Service {
 
         // 停止当前任务
         // @ts-ignore
-        jResult = await ctx.service.serviceTask.shutdownTask(taskNo, 1);
+        let res = await ctx.service.serviceTask.shutdownTask(taskNo, 1);
         // 设置为异常结束 
         // @ts-ignore
-        jResult = await ctx.service.serviceTask.setTaskState(taskNo, 9);
+        res = await ctx.service.serviceTask.setTaskState(taskNo, 9);
         // 置为空闲 
         // @ts-ignore
-        jResult = await ctx.service.serviceTask.set2IdleState(serverId);
+        res = await ctx.service.serviceTask.set2IdleState(serverId);
+
+        // 置错误信息
+        res = await ctx.service.serviceTask.setError(taskNo, jResult.msg);
         return jResult;
       }
       // @ts-ignore
@@ -116,7 +119,7 @@ export default class Main2AnalyseService extends Service {
       if (undefined !== isHavePrimaryKey && isHavePrimaryKey === false) {
         eval(`ctx.model.${tableName}.removeAttribute('id')`);
       }
-      
+
       let functionString;
       if (undefined !== condition) {
         condition.logging = false;

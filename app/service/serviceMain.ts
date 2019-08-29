@@ -76,7 +76,7 @@ export default class TaskService extends Service {
               // @ts-ignore 
               // await ctx.service.serviceTask.setTaskState(taskNo, 8);
               continue;
-            } 
+            }
 
             // 是否超任务数
             if (curRunningTask >= maxRunningTask) {
@@ -200,14 +200,24 @@ export default class TaskService extends Service {
         option.logging = false;
         // @ts-ignore
         // option.operatorsAliases = true;
+        option.dialectOptions = {
+          connectTimeout: this.config.program.connectTimeout,
+          options: {
+            requestTimeout: 999999,
+            connectTimeout: this.config.program.connectTimeout,
+          },
+        };
         if (undefined !== instanceName && null !== instanceName) {
           // @ts-ignore
-          option.dialectOptions = {
-            options: {
-              requestTimeout: 999999,
-              instanceName: instanceName,
-            },
-          };
+          option.dialectOptions.options.instanceName = instanceName;
+          // // @ts-ignore
+          // option.dialectOptions = {
+          //   options: {
+          //     requestTimeout: 999999,
+          //     connectTimeout: this.config.program.connectTimeout,
+          //     instanceName: instanceName,
+          //   },
+          // };
         };
 
         let connectInfo = {};

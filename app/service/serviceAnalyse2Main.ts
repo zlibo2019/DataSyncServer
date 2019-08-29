@@ -81,7 +81,7 @@ export default class Analyse2MainService extends Service {
 
     let tableNameLine;
     // @ts-ignore
-    // const transaction = await ctx.model.transaction();
+    const transaction = await ctx.model.transaction();
     try {
       // 转下划线
       // @ts-ignore
@@ -105,11 +105,11 @@ export default class Analyse2MainService extends Service {
       // @ts-ignore
       let arr = await arrs.map(i => i.get({ plain: true }));
 
-      // // 加锁
-      // let sql = `select 1  from KQ_LOCK with(xlock) where  lock_table = '${tableNameLine}'`;
-      // // @ts-ignore
-      // await ctx.model.query(sql, { type: sequelize.QueryTypes.select });
-
+      // 加锁
+      let sql = `select * from KQ_LOCK with(rowlock,xlock) where lock_table = '${tableNameLine}'`;
+      // @ts-ignore
+      let res = await ctx.model.query(sql, { transaction });
+      
       // 删除记录
       let functionString;
       if (undefined !== condition && null !== condition) {
@@ -138,10 +138,10 @@ export default class Analyse2MainService extends Service {
         functionString = `ctx.model.${tableName}.bulkCreate(curArr)`;
         await eval(functionString);
       }
-      // await transaction.commit();
+      await transaction.commit();
       return jResult;
     } catch (err) {
-      // await transaction.rollback();
+      await transaction.rollback();
       jResult.code = -1;
       jResult.msg = `${tableNameLine}${err.stack}`;
       ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + jResult.msg);
@@ -214,8 +214,8 @@ export default class Analyse2MainService extends Service {
     // @ts-ignore
     const transaction = await ctx.model.transaction();
     try {
-      // 转下划线
 
+      // 转下划线
       const table = await sequelize.import(`${root}\\model\\kt_jl`);
       let arrs = await table.findAll({
         attributes: ['bh', 'lx'],

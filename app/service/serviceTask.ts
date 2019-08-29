@@ -36,12 +36,43 @@ export default class TaskService extends Service {
           let isConflict = ctx.service.serviceCommon.checkDuplicationNormal(arrAll);
           if (isConflict && isConflict === true) {
             jResult.data = true;
-            ctx.logger.error('冲突任务:' +  arrJob[i].TASK_NO);
+            ctx.logger.error('冲突任务:' + arrJob[i].TASK_NO);
             ctx.logger.error('冲突人员:' + arrAll);
             return jResult;
           }
         }
       }
+      return jResult;
+    } catch (err) {
+      jResult.code = -1;
+      jResult.msg = `${err.stack}`;
+      jResult.data = null;
+      return jResult;
+    }
+  }
+
+
+
+  /**
+   * # 置错误
+   */
+  async setError(taskNo, errInfo) {
+    const { ctx } = this;
+    let jResult: IResult
+      = {
+      code: 0,
+      msg: '',
+      data: 0
+    };
+    try {
+      await ctx.model.KQJOBINFO.update({
+        remarks: errInfo,
+      }, {
+          where: {
+            TASK_NO: taskNo,
+          },
+        });
+
       return jResult;
     } catch (err) {
       jResult.code = -1;
