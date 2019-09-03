@@ -95,7 +95,7 @@ export default class Main2AnalyseService extends Service {
       const table = await sequelize.import(`${root}\\model\\${tableNameLine}`);
 
       ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + 'select准备加锁:' + taskNo);
-      let sql = `select * from KQ_LOCK with(rowlock,xlock) where lock_table = '${tableNameLine}'`;
+      let sql = `select * from KQ_LOCK with(xlock) where lock_table = '${tableNameLine}'`;
       // @ts-ignore
       let res = await ctx.model.query(sql, { transaction });
 

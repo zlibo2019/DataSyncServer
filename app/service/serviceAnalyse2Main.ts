@@ -106,7 +106,7 @@ export default class Analyse2MainService extends Service {
       let arr = await arrs.map(i => i.get({ plain: true }));
 
       // 加锁
-      let sql = `select * from KQ_LOCK with(rowlock,xlock) where lock_table = '${tableNameLine}'`;
+      let sql = `select * from KQ_LOCK with(xlock) where lock_table = '${tableNameLine}'`;
       // @ts-ignore
       let res = await ctx.model.query(sql, { transaction });
       
@@ -171,7 +171,7 @@ export default class Analyse2MainService extends Service {
 
       // 加锁 更新kt_jl 
       ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + '测试加锁:' + taskNo);
-      let sql = `select * from KQ_LOCK with(rowlock,xlock) where lock_table = 'kt_jl'`
+      let sql = `select * from KQ_LOCK with(xlock) where lock_table = 'kt_jl'`
       // @ts-ignore
       let res = await ctx.model.query(sql, transaction);
       console.log('测试res' + JSON.stringify(res));
@@ -226,7 +226,7 @@ export default class Analyse2MainService extends Service {
 
       // 加锁 更新kt_jl 
       ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + 'update准备加锁:' + taskNo);
-      let sql = `select * from KQ_LOCK with(rowlock,xlock) where lock_table = 'kt_jl'`
+      let sql = `select * from KQ_LOCK with(xlock) where lock_table = 'kt_jl'`
       // @ts-ignore
       let res = await ctx.model.query(sql, { transaction });
       ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + 'res ' + taskNo + JSON.stringify(res));
