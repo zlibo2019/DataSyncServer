@@ -16,14 +16,14 @@ export default (appInfo: EggAppInfo) => {
 
   config.sequelize = {
     dialect: 'mssql',     // 数据库类型
-    database: 'scm_main_sjfx10000',   // 数据库名称
+    database: 'scm_main_sjfx15000',   // 数据库名称
     timezone: '+08:00',
     pool: {
       max: 5000,
       min: 0,
       idle: 100000,
     },
-    host: '10.9.0.19',     // 服务器
+    host: '10.21.0.30',     // 服务器
     port: 1433,           // 端口 
     username: 'sa',        // 用户名
     password: '123456',       // 密码
@@ -44,7 +44,25 @@ export default (appInfo: EggAppInfo) => {
     },
   };
 
+  config.optimization = {
+    splitChunks: {
+      cacheGroups: {
+        commons: {
+          chunks: 'initial',
+          minChunks: 2, maxInitialRequests: 5,
+          minSize: 0,
+        },
 
+        vendor: {
+          test: /node_modules/,
+          chunks: 'initial',
+          name: 'vendor',
+          priority: 10,
+          enforce: true
+        }
+      }
+    },
+  };
 
   config.cors = {
     origin: '*',
@@ -78,8 +96,8 @@ export default (appInfo: EggAppInfo) => {
 
 
   config.program = {
-    current_ip: '10.1.0.16',
-    current_port: 7002,
+    current_ip: '10.18.0.2',
+    current_port: 7001,
     connectTimeout: 600000,
     max_running_task: 15,
     insertTableList: [

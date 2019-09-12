@@ -69,9 +69,9 @@ export default class Main2AnalyseService extends Service {
   }
 
   /**
-   * # 同步单表
-   * isForce 是否强制删除原表 1是0否
-   */
+    * # 同步单表
+    * isForce 是否强制删除原表 1是0否
+    */
   // @ts-ignore
   async insertTable(sequelize, root, tableName, condition, isHavePrimaryKey, taskNo) {
     // @ts-ignore
@@ -82,6 +82,133 @@ export default class Main2AnalyseService extends Service {
       msg: '',
       data: null
     };
+
+    let tableNameLine;
+    try {
+      // 转下划线
+      // @ts-ignore
+      tableNameLine = ctx.service.serviceCommon.toLine(tableName);
+
+      if (tableNameLine === "kt_jl") {
+        jResult = await this.insertTableTrans(sequelize, root, tableName, condition, isHavePrimaryKey, taskNo);
+      } else {
+        jResult = await this.insertTableNoTrans(sequelize, root, tableName, condition, isHavePrimaryKey, taskNo);
+      }
+
+      return jResult;
+    } catch (err) {
+
+      // await transaction.rollback();
+      jResult.code = -1;
+      jResult.msg = `taskNo:${taskNo} ${tableNameLine} 表错误:${err.stack}`;
+      jResult.data = null;
+      return jResult;
+    }
+  }
+
+  /**
+   * # 同步单表
+   * isForce 是否强制删除原表 1是0否
+   */
+  // @ts-ignore
+  async insertTableNoTrans(sequelize, root, tableName, condition, isHavePrimaryKey, taskNo) {
+    // @ts-ignore
+    const { ctx } = this;
+    let jResult: IResult
+      = {
+      code: 0,
+      msg: '',
+      data: null
+    };
+
+    let tableNameLine;
+    let arr;
+
+    // @ts-ignore
+    // const transaction = await ctx.model.transaction();
+    try {
+      // 转下划线
+      // @ts-ignore
+      tableNameLine = ctx.service.serviceCommon.toLine(tableName);
+      const table = await sequelize.import(`${root}\\model\\${tableNameLine}`);
+
+      ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + 'select准备加锁:' + taskNo);
+      // let sql = `select * from KQ_LOCK with(xlock) where lock_table = '${tableNameLine}'`;
+      // // @ts-ignore
+      // let res = await ctx.model.query(sql, { transaction });
+
+      // ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + 'res ' + taskNo + JSON.stringify(res));
+
+      // 清空表
+      let res = await table.destroy({
+        where: {},
+        truncate: true,
+      });
+      if (undefined !== res) {
+        jResult.code = -1;
+        jResult.msg = `taskNo:${taskNo} ${tableNameLine}  清记录错误`;
+        ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + jResult.msg);
+      } else {
+        let msg = `taskNo:${taskNo} ${tableNameLine}  清记录成功`;
+        ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + msg);
+      }
+
+      // 如果没有主键,去掉系统默认填加的id
+      if (undefined !== isHavePrimaryKey && isHavePrimaryKey === false) {
+        eval(`ctx.model.${tableName}.removeAttribute('id')`);
+      }
+
+      let functionString;
+      if (undefined !== condition) {
+        condition.logging = false;
+        functionString = `ctx.model.${tableName}.findAll(condition)`;
+      } else {
+        functionString = `ctx.model.${tableName}.findAll()`;
+      }
+
+
+
+      let arrs = await eval(functionString); // await ctx.model.DtUser.findAll();
+      arr = await arrs.map(i => i.get({ plain: true }));
+      ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + ` ${taskNo}:${tableName}记录总数:${arr.length}`);
+
+      res = await table.bulkCreate(arr);
+      let msg = `taskNo:${taskNo} ${tableNameLine}  插入记录条数:` + res.length;
+      ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + msg);
+      // await transaction.commit();
+      ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + 'select解锁:' + taskNo);
+      return jResult;
+    } catch (err) {
+
+      // await transaction.rollback();
+      jResult.code = -1;
+      jResult.msg = `taskNo:${taskNo} ${tableNameLine} 表错误:${err.stack}`;
+      ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + jResult.msg);
+
+      ctx.logger.error(err.sql);
+      // ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss")  + JSON.stringify(arr));
+      jResult.data = null;
+      return jResult;
+    }
+  }
+
+
+  /**
+   * # 同步单表
+   * isForce 是否强制删除原表 1是0否
+   */
+  // @ts-ignore
+  async insertTableTrans(sequelize, root, tableName, condition, isHavePrimaryKey, taskNo) {
+    // @ts-ignore
+    const { ctx } = this;
+    let jResult: IResult
+      = {
+      code: 0,
+      msg: '',
+      data: null
+    };
+
+    console.log('kt_jl 加锁..............................');
 
     let tableNameLine;
     let arr;

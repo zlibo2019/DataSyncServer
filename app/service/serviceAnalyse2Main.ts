@@ -36,13 +36,16 @@ export default class Analyse2MainService extends Service {
 
         // 停止当前任务
         // @ts-ignore
-        jResult = await ctx.service.serviceTask.shutdownTask(taskNo, 5);
+        let res = await ctx.service.serviceTask.shutdownTask(taskNo, 5);
         // 设置为异常结束
         // @ts-ignore
-        jResult = await ctx.service.serviceTask.setTaskState(taskNo, 9);
+        res = await ctx.service.serviceTask.setTaskState(taskNo, 9);
         // 置为空闲 
         // @ts-ignore
-        jResult = await ctx.service.serviceTask.set2IdleState(serverId);
+        res = await ctx.service.serviceTask.set2IdleState(serverId);
+
+        // 置错误信息
+        res = await ctx.service.serviceTask.setError(taskNo, jResult.msg);
         return jResult;
       }
       // @ts-ignore
@@ -109,7 +112,7 @@ export default class Analyse2MainService extends Service {
       let sql = `select * from KQ_LOCK with(xlock) where lock_table = '${tableNameLine}'`;
       // @ts-ignore
       let res = await ctx.model.query(sql, { transaction });
-      
+
       // 删除记录
       let functionString;
       if (undefined !== condition && null !== condition) {
