@@ -13,8 +13,8 @@ export default class Main2AnalyseService extends Service {
   /**
    * # 主服务同步到分析服务
    */
-  async main2Analyse(taskNo, serverId, userData, startDate, endDate, year, month) {
-    const { ctx } = this;
+  async main2Analyse(parentBh, taskNo, serverId, userData, startDate, endDate, year, month) {
+    const { ctx,app } = this;
     let jResult: IResult
       = {
       code: 0,
@@ -22,10 +22,24 @@ export default class Main2AnalyseService extends Service {
       data: null
     };
     try {
+      let mutex = await app.redis.get(`mutex_${serverId}`);
+      if (undefined === mutex || null === mutex || Number(mutex) === 0) {
+        await app.redis.set(`mutex_${serverId}`, 1);
+      } else {
+        return jResult;
+      }
+
+
+      ctx.logger.error('任务号：' + taskNo);
+      if (taskNo === '201909161714513368') {
+        ctx.logger.error('201909161714513368aa' + moment(new Date()).format("YYYY-MM-DD HH:mm:ss"));
+      }
+
       // @ts-ignore
-      jResult = await ctx.service.serviceTask.setTaskState(taskNo, 1);   // 同步中
+      jResult = await ctx.service.serviceTask.setTaskState(parentBh, taskNo, 1);   // 同步中
       if (jResult.code === -1) {
         ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + jResult.msg);
+        await app.redis.set(`mutex_${serverId}`, 0);
         return jResult;
       }
 
@@ -43,27 +57,30 @@ export default class Main2AnalyseService extends Service {
         let res = await ctx.service.serviceTask.shutdownTask(taskNo, 1);
         // 设置为异常结束 
         // @ts-ignore
-        res = await ctx.service.serviceTask.setTaskState(taskNo, 9);
+        res = await ctx.service.serviceTask.setTaskState(parentBh, taskNo, 9);
         // 置为空闲 
         // @ts-ignore
         res = await ctx.service.serviceTask.set2IdleState(serverId);
 
         // 置错误信息
         res = await ctx.service.serviceTask.setError(taskNo, jResult.msg);
+        await app.redis.set(`mutex_${serverId}`, 0);
         return jResult;
       }
       // @ts-ignore
-      jResult = await ctx.service.serviceTask.setTaskState(taskNo, 2);    // 同步完成
+      jResult = await ctx.service.serviceTask.setTaskState(parentBh, taskNo, 2);    // 同步完成
       if (jResult.code === -1) {
         ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + jResult.msg);
+        await app.redis.set(`mutex_${serverId}`, 0);
         return jResult;
       }
-
+      await app.redis.set(`mutex_${serverId}`, 0);
       return jResult;
     } catch (err) {
       jResult.code = -1;
       jResult.msg = `${err.stack}`;
       jResult.data = null;
+      await app.redis.set(`mutex_${serverId}`, 0);
       return jResult;
     }
   }
@@ -208,7 +225,7 @@ export default class Main2AnalyseService extends Service {
       data: null
     };
 
-    console.log('kt_jl 加锁..............................');
+    // console.log('kt_jl 加锁..............................');
 
     let tableNameLine;
     let arr;

@@ -9,10 +9,10 @@ export default class AnalyseService extends Service {
   /**
    * # 调用数据分析地址
    */
-  async callAnalyse(host, startDate, endDate, userData, fx, lock, depData, year, month, day,
+  async callAnalyse(serverId,parentBh,host, startDate, endDate, userData, fx, lock, depData, year, month, day,
     instanceName, dbPort, dbName, user, pwd, taskNo, urlHead
   ) {
-    const { ctx } = this;
+    const { ctx,app } = this;
     let jResult: IResult
       = {
       code: 0,
@@ -20,8 +20,17 @@ export default class AnalyseService extends Service {
       data: null
     };
     try {
+      let mutex = await app.redis.get(`mutex_${serverId}`);
+      if (undefined === mutex || null === mutex || Number(mutex) === 0) {
+        await app.redis.set(`mutex_${serverId}`, 1);
+      } else {
+        return jResult;
+      }
+
+
+
       // @ts-ignore
-      jResult = await ctx.service.serviceTask.setTaskState(taskNo, 3);   // 分析中
+      jResult = await ctx.service.serviceTask.setTaskState(parentBh,taskNo, 3);   // 分析中
       if (jResult.code === -1) {
         ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + jResult.msg);
       }
@@ -54,13 +63,14 @@ export default class AnalyseService extends Service {
         stream: form,
         // dataType: 'json',
       });
-
+      await app.redis.set(`mutex_${serverId}`, 0);
       return jResult;
     } catch (err) {
       jResult.code = -1;
       jResult.msg = `${err.stack}`;
       ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + '数据分析执行错误:' + err.stack);
       jResult.data = null;
+      await app.redis.set(`mutex_${serverId}`, 0);
       return jResult;
     }
   }

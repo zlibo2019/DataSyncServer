@@ -13,8 +13,8 @@ export default class Analyse2MainService extends Service {
   /**
    * # 分析服务同步到主服务
    */
-  async analyse2main(taskNo, serverId, userData, startDate, endDate, year, month) {
-    const { ctx } = this;
+  async analyse2main(parentBh,taskNo, serverId, userData, startDate, endDate, year, month) {
+    const { ctx,app } = this;
     let jResult: IResult
       = {
       code: 0,
@@ -22,9 +22,18 @@ export default class Analyse2MainService extends Service {
       data: null
     };
     try {
-      jResult = await ctx.service.serviceTask.setTaskState(taskNo, 5);    // 反向同步中
+      let mutex = await app.redis.get(`mutex_${serverId}`);
+      if (undefined === mutex || null === mutex || Number(mutex) === 0) {
+        await app.redis.set(`mutex_${serverId}`, 1);
+      } else {
+        return jResult;
+      }
+
+
+      jResult = await ctx.service.serviceTask.setTaskState(parentBh,taskNo, 5);    // 反向同步中
       if (jResult.code === -1) {
         ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + jResult.msg);
+        await app.redis.set(`mutex_${serverId}`, 0);
         return jResult;
       }
 
@@ -39,29 +48,33 @@ export default class Analyse2MainService extends Service {
         let res = await ctx.service.serviceTask.shutdownTask(taskNo, 5);
         // 设置为异常结束
         // @ts-ignore
-        res = await ctx.service.serviceTask.setTaskState(taskNo, 9);
+        res = await ctx.service.serviceTask.setTaskState(parentBh,taskNo, 9);
         // 置为空闲 
         // @ts-ignore
         res = await ctx.service.serviceTask.set2IdleState(serverId);
 
         // 置错误信息
         res = await ctx.service.serviceTask.setError(taskNo, jResult.msg);
+        await app.redis.set(`mutex_${serverId}`, 0);
         return jResult;
       }
       // @ts-ignore
 
-      jResult = await ctx.service.serviceTask.setTaskState(taskNo, 6);     // 所有流程完成
+
+      jResult = await ctx.service.serviceTask.setTaskState(parentBh,taskNo, 6);     // 所有流程完成
       if (jResult.code === -1) {
         ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + jResult.msg);
+        await app.redis.set(`mutex_${serverId}`, 0);
         return jResult;
       }
       ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + `${taskNo}:` + '结束');
-
+      await app.redis.set(`mutex_${serverId}`, 0);
       return jResult;
     } catch (err) {
       jResult.code = -1;
       jResult.msg = `${err.stack}`;
       jResult.data = null;
+      await app.redis.set(`mutex_${serverId}`, 0);
       return jResult;
     }
   }

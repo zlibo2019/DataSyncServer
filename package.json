@@ -9,8 +9,7 @@
   "scripts": {
     "start": "egg-scripts start --daemon --title=egg-server-weds-node-edu",
     "stop": "egg-scripts stop --title=egg-server-weds-node-edu",
-    "build": "webpack --mode production node web/build/build.js",
-    "dev": "webpack --mode development egg-bin dev -r egg-ts-helper/register",
+    "dev": "egg-bin dev -r egg-ts-helper/register",
     "debug": "egg-bin debug -r egg-ts-helper/register",
     "test-local": "egg-bin test -r egg-ts-helper/register",
     "test": "npm run lint -- --fix && npm run test-local",

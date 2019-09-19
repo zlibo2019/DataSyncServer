@@ -6,7 +6,7 @@ export default {
     this.status = 200;
   },
   failed(this: Context, res: any) {
-    const ts = (Date.now() / 1000).toString();
+    const ts = `${(Date.now() / 1000).toString()}_err:`;
     res.ts = ts;
     this.body = res;
     this.status = 201;

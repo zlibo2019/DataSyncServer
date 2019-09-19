@@ -68,10 +68,10 @@ export default class TaskService extends Service {
       await ctx.model.KQJOBINFO.update({
         remarks: errInfo,
       }, {
-          where: {
-            TASK_NO: taskNo,
-          },
-        });
+        where: {
+          TASK_NO: taskNo,
+        },
+      });
 
       return jResult;
     } catch (err) {
@@ -129,8 +129,17 @@ export default class TaskService extends Service {
     };
     try {
       // @ts-ignore
-      let arrTask = await ctx.model.KQJOBINFO.findAll();
-      jResult.data = arrTask;
+      // let arrTask = await ctx.model.KQJOBINFO.findAll();
+      // task_state 0 没执行 1 执行中 2 成功 3 失败
+      let arrTask = await ctx.model.query(`
+          select b.*
+          from kq_job_info_parent a
+          inner join kq_job_info b on a.bh = b.parent_bh
+          where a.task_state < 2  and b.task_state <> 6 and b.task_state <> 8
+          order by task_start`
+      );
+
+      jResult.data = arrTask[0];
       return jResult;
     } catch (err) {
       jResult.code = -1;
@@ -158,12 +167,12 @@ export default class TaskService extends Service {
         TASK_END: moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
         FINISH_FLAG: 2,
       }, {
-          where: {
-            TASK_NO: taskNo,
-            TASK_STATE: taskState,
-            FINISH_FLAG: 0,
-          },
-        });
+        where: {
+          TASK_NO: taskNo,
+          TASK_STATE: taskState,
+          FINISH_FLAG: 0,
+        },
+      });
 
       return jResult;
     } catch (err) {
@@ -177,7 +186,7 @@ export default class TaskService extends Service {
   /**
   * # 查询任务状态
   */
-  async getTaskState(taskNo) {
+  async getTaskInfo(taskNo) {
     const { ctx } = this;
     let jResult: IResult
       = {
@@ -193,7 +202,7 @@ export default class TaskService extends Service {
         },
       });
 
-      jResult.data = Number(res.TASK_STATE);
+      jResult.data = res; // Number(res.TASK_STATE);
       return jResult;
     } catch (err) {
       jResult.code = -1;
@@ -206,15 +215,104 @@ export default class TaskService extends Service {
 
 
   /**
-   * # 置状态
-   */
-  async setTaskState(taskNo, taskState) {
+    * # 查询任务状态
+    */
+  async isFinished(parentBh) {
     const { ctx } = this;
     let jResult: IResult
       = {
       code: 0,
       msg: '',
-      data: null
+      data: false
+    };
+    try {
+      // @ts-ignore
+      let res = await ctx.model.query(
+        `select count(1) as counts
+      from kq_job_info 
+      where task_state <> 6 and parent_bh = '${parentBh}'`
+      );
+
+      if (res[0].length > 0 && res[0][0].counts === 0) {
+        jResult.data = true;
+      }
+      return jResult;
+    } catch (err) {
+      jResult.code = -1;
+      jResult.msg = `${err.stack}`;
+      jResult.data = false;
+      return jResult;
+    }
+  }
+
+
+  /**
+   * # 查询任务状态
+   */
+  async flushRedis() {
+    const { app } = this;
+    let jResult: IResult
+      = {
+      code: 0,
+      msg: '',
+      data: false
+    };
+    try {
+      await app.redis.flushdb();
+      return jResult;
+    } catch (err) {
+      jResult.code = -1;
+      jResult.msg = `${err.stack}`;
+      jResult.data = false;
+      return jResult;
+    }
+  }
+
+
+  /**
+    * # 获取服务器状态 
+    */
+  async isServerIdle(serverId) {
+    const { ctx } = this;
+    let jResult: IResult
+      = {
+      code: 0,
+      msg: '',
+      data: true
+    };
+    try {
+      // @ts-ignore
+      let res = await ctx.model.KQSERVERINFO.findOne(
+        {
+          where: {
+            SERVER_ID: serverId,
+            SERVER_STATE: 0,
+          }
+        }
+      );
+
+      if (res.length === 0) {
+        jResult.data = false;
+      }
+      return jResult;
+    } catch (err) {
+      jResult.code = -1;
+      jResult.msg = `${err.stack}`;
+      jResult.data = false;
+      return jResult;
+    }
+  }
+
+  /**
+   * # 置状态
+   */
+  async setTaskState(parentBh, taskNo, taskState) {
+    const { ctx } = this;
+    let jResult: IResult
+      = {
+      code: 0,
+      msg: '',
+      data: null,
     };
     // @ts-ignore
     const transaction = await ctx.model.transaction();
@@ -255,7 +353,9 @@ export default class TaskService extends Service {
       })
       let serverId = res.SERVER_ID;
       switch (taskState) {
-        case 1: // 数据从主服务器向分析服务器同步完成(执行分析)
+        case 1: // 数据从主服务器向分析服务器同步
+
+          // 任务时段明细表新增记录
           // @ts-ignore
           res = await ctx.model.KQJOBUNITINFO.create({
             TASK_NO: taskNo,
@@ -269,24 +369,100 @@ export default class TaskService extends Service {
           res = await ctx.model.KQSERVERINFO.update({
             SERVER_STATE: 1,
           }, {
-              where: {
-                SERVER_ID: serverId,
-              },
-            });
+            where: {
+              SERVER_ID: serverId,
+            },
+          });
+
+          // 主表置状态
+          res = await ctx.model.KQJOBINFOPARENT.update({
+            TASK_STATE: 1,
+            TASK_START: moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
+          }, {
+            where: {
+              BH: parentBh,
+              TASK_START:null,
+            },
+          });
 
           break;
+
+        // case 3: // 数据分析开始
+        //   ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + '数据分析开始:' + taskNo);
+
+        //   // @ts-ignore
+        //   res = await ctx.model.KQJOBUNITINFO.update({
+        //     TASK_END: moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
+        //     FINISH_FLAG: 1,
+        //   }, {
+        //     where: {
+        //       TASK_NO: taskNo,
+        //       TASK_STATE: taskState - 1,
+        //       FINISH_FLAG: 0,
+        //     },
+        //   });
+        //   // @ts-ignore
+        //   res = await ctx.model.KQJOBUNITINFO.create({
+        //     TASK_NO: taskNo,
+        //     SERVER_ID: serverId,
+        //     TASK_STATE: taskState,
+        //     TASK_START: moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
+        //     FINISH_FLAG: 0,
+        //   });
+
+        //   break;
+        // case 4: // 数据分析结束
+        //   ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + '数据分析结束:' + taskNo);
+
+        //   // @ts-ignore
+        //   res = await ctx.model.KQJOBUNITINFO.update({
+        //     TASK_END: moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
+        //     FINISH_FLAG: 1,
+        //   }, {
+        //     where: {
+        //       TASK_NO: taskNo,
+        //       TASK_STATE: taskState - 1,
+        //       FINISH_FLAG: 0,
+        //     },
+        //   });
+        //   // @ts-ignore
+        //   res = await ctx.model.KQJOBUNITINFO.create({
+        //     TASK_NO: taskNo,
+        //     SERVER_ID: serverId,
+        //     TASK_STATE: taskState,
+        //     TASK_START: moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
+        //     FINISH_FLAG: 0,
+        //   });
+
+        //   break;
+
         case 6: // 结束
           // 更新任务块结束时间
           res = await ctx.model.KQJOBUNITINFO.update({
             TASK_END: moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
             FINISH_FLAG: 1,
           }, {
+            where: {
+              TASK_NO: taskNo,
+              TASK_STATE: taskState - 1,
+              FINISH_FLAG: 0,
+            },
+          });
+
+
+          res = await this.isFinished(parentBh);
+          if (res.data) {
+
+            // 主表置状态
+            res = await ctx.model.KQJOBINFOPARENT.update({
+              TASK_STATE: 2,
+              TASK_END: moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
+            }, {
               where: {
-                TASK_NO: taskNo,
-                TASK_STATE: taskState - 1,
-                FINISH_FLAG: 0,
+                BH: parentBh,
               },
             });
+          }
 
           jResult = await this.set2IdleState(serverId);
           if (jResult.code === -1) {
@@ -308,6 +484,16 @@ export default class TaskService extends Service {
             return jResult;
           }
 
+          // 主表置状态
+          res = await ctx.model.KQJOBINFOPARENT.update({
+            TASK_STATE: 3,
+            TASK_END: moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
+          }, {
+            where: {
+              BH: parentBh,
+            },
+          });
+
           break;
         default:
           // @ts-ignore
@@ -315,12 +501,12 @@ export default class TaskService extends Service {
             TASK_END: moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
             FINISH_FLAG: 1,
           }, {
-              where: {
-                TASK_NO: taskNo,
-                TASK_STATE: taskState - 1,
-                FINISH_FLAG: 0,
-              },
-            });
+            where: {
+              TASK_NO: taskNo,
+              TASK_STATE: taskState - 1,
+              FINISH_FLAG: 0,
+            },
+          });
           // @ts-ignore
           res = await ctx.model.KQJOBUNITINFO.create({
             TASK_NO: taskNo,
@@ -340,6 +526,43 @@ export default class TaskService extends Service {
       return jResult;
     }
   }
+
+  /**
+   * # 根据空闲的服务器找到使用该服务器的其中一个任务
+   */
+  async getTaskNoByIdleServer() {
+    const { ctx } = this;
+    let jResult: IResult
+      = {
+      code: -1,
+      msg: '',
+      data: 0
+    };
+    // @ts-ignore
+    try {
+
+      // 任务列表中该服务器如果为等待状态置为可执行
+      // @ts-ignore
+      let res = await ctx.model.query(`select top 1 b.task_no,b.server_id
+      from kq_server_info a
+      inner join kq_job_info b on a.server_id = b.server_id
+      where a.server_state = 0`);
+      let task = res[0];
+      // if(undefined !== taskNo )
+      if (task.length > 0) {
+        jResult.code = 0;
+        jResult.data = task;
+      }
+      return jResult;
+    } catch (err) {
+      jResult.code = -1;
+      jResult.msg = `${err.stack}`;
+      ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + jResult.msg);
+      jResult.data = null;
+      return jResult;
+    }
+  }
+
 
 
   /**
@@ -365,23 +588,56 @@ export default class TaskService extends Service {
         }
       })
       if (undefined !== res && null !== res) {
+        // @ts-ignore
         ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + '等待转空闲,任务号:' + res.TASK_NO);
         await ctx.model.KQJOBINFO.update({
           TASK_STATE: 0,
         }, {
-            where: {
-              TASK_NO: res.TASK_NO,
-            },
-          });
+          where: {
+            // @ts-ignore
+            TASK_NO: res.TASK_NO,
+          },
+        });
       } else {
+
         // 服务器置回空闲状态
         res = await ctx.model.KQSERVERINFO.update({
           SERVER_STATE: 0,
         }, {
-            where: {
-              SERVER_ID: serverId,
-            },
-          });
+          where: {
+            SERVER_ID: serverId,
+          },
+        });
+        // // 一直未分配服务器的任务
+        // res = await this.getTaskNoByIdleServer();
+        // if (res.code === 0) {
+        //   await ctx.model.KQJOBINFO.update({
+        //     TASK_STATE: 0,
+        //   }, {
+        //     where: {
+        //       TASK_NO: res.task_no,
+        //     },
+        //   });
+
+        //   // 服务器置回空闲状态
+        //   await ctx.model.KQSERVERINFO.update({
+        //     SERVER_STATE: 1,
+        //   }, {
+        //     where: {
+        //       SERVER_ID: res.server_id,
+        //     },
+        //   });
+
+        // } else {
+        //   // 服务器置回空闲状态
+        //   res = await ctx.model.KQSERVERINFO.update({
+        //     SERVER_STATE: 0,
+        //   }, {
+        //     where: {
+        //       SERVER_ID: serverId,
+        //     },
+        //   });
+        // }
       }
       await transaction.commit();
       return jResult;
@@ -440,7 +696,7 @@ export default class TaskService extends Service {
 
         // 重新执行
         // @ts-ignore
-        jResult = await ctx.service.serviceTask.setTaskState(taskNo, taskState - 1);
+        jResult = await ctx.service.serviceTask.setTaskState(parentBh, taskNo, taskState - 1);
         if (jResult.code === -1) {
           ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + jResult.msg);
           return jResult;

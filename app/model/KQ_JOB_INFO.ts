@@ -72,6 +72,10 @@ module.exports = app => {
       type: STRING,
       allowNull: true
     },
+    PARENT_BH: {
+      type: STRING,
+      allowNull: true
+    },
   }, {
       tableName: 'KQ_JOB_INFO',
       freezeTableName: true, // Model 对应的表名将与model名相同

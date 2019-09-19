@@ -24,13 +24,14 @@ class CommonController extends Controller {
             let arr = Object.keys(body);
             let curBody = arr[0];
             let taskNo = curBody.replace(`"task_no":`, ``).replace(`"`, ``).replace(`"`, ``);
-            jResult = await ctx.service.serviceTask.getTaskState(taskNo);
+            jResult = await ctx.service.serviceTask.getTaskInfo(taskNo);
             if (jResult.code === -1) {
                 ctx.failed(jResult);
                 ctx.logger.error(jResult.msg);
                 return;
             }
-            let curTaskState = jResult.data;
+            let res = jResult.data;
+            let curTaskState = Number(res.TASK_STATE);
             if (curTaskState !== 3) {
                 jResult.msg = '状态已被更改,该分析结果状态更新无效!';
                 ctx.logger.error(jResult.msg);
@@ -39,7 +40,7 @@ class CommonController extends Controller {
             }
             ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + ' 分析完成!' + JSON.stringify(body));
             // @ts-ignore
-            jResult = await ctx.service.serviceTask.setTaskState(taskNo, 4);
+            jResult = await ctx.service.serviceTask.setTaskState(res.PARENT_BH, taskNo, 4);
 
             if (jResult.code === -1) {
                 ctx.failed(jResult);

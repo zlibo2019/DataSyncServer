@@ -13,12 +13,15 @@ export default class TaskService extends Service {
     };
     try {
       // @ts-ignore
-      let jResult = await ctx.service.serviceTask.getRunningTask();
+      // for 控制并发量
+      jResult = await ctx.service.serviceTask.getRunningTask();
       if (jResult.code === -1) {
         return jResult;
       }
       let curRunningTask = jResult.data;
       ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + ' 当前任务数:' + curRunningTask);
+
+
 
       let maxRunningTask = app.config.program.max_running_task;
       ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + ' 允许最大任务数:' + maxRunningTask);
@@ -31,6 +34,7 @@ export default class TaskService extends Service {
 
       for (let i = 0; i < arrTask.length; i++) {
         let taskNo = arrTask[i].TASK_NO;
+        let parentBh = arrTask[i].PARENT_BH;
         let serverId = arrTask[i].SERVER_ID;
         let startDate = arrTask[i].START_DATE;
         startDate = moment(startDate).format("YYYY-MM-DD");
@@ -45,22 +49,22 @@ export default class TaskService extends Service {
         let day = arrTask[i].TASK_DAY;
         let taskState = Number(arrTask[i].TASK_STATE);
 
-        // 如果人员为空,从部门生成
-        if (taskState === 0 || taskState === 4) {
-          if (null === userData || '' === userData) {
-            // @ts-ignore
-            jResult = await ctx.service.serviceCommon.getUserByDep(depData);
-            if (jResult.code === -1) {
-              return jResult;
-            }
-            let arrUser = jResult.data;
-            let arrUserId = new Array();
-            for (let i = 0; i < arrUser.length; i++) {
-              arrUserId.push(arrUser[i].user_serial);
-            }
-            userData = arrUserId.join(',');
-          }
-        }
+        // // 如果人员为空,从部门生成
+        // if (taskState === 0 || taskState === 4) {
+        //   if (null === userData || '' === userData) {
+        //     // @ts-ignore
+        //     jResult = await ctx.service.serviceCommon.getUserByDep(depData);
+        //     if (jResult.code === -1) {
+        //       return jResult;
+        //     }
+        //     let arrUser = jResult.data;
+        //     let arrUserId = new Array();
+        //     for (let i = 0; i < arrUser.length; i++) {
+        //       arrUserId.push(arrUser[i].user_serial);
+        //     }
+        //     userData = arrUserId.join(',');
+        //   }
+        // }
         // let curTaskState;
         switch (taskState) {
           case 0: // 新任务,执行同步(从主服务器向分析服务器)
@@ -84,10 +88,19 @@ export default class TaskService extends Service {
             }
             curRunningTask++;
             ctx.logger.error('当前任务数:' + curRunningTask);
+
+            // let res = await ctx.service.serviceTask.isServerIdle(serverId);
+            // // @ts-ignore
+            // if (!res.data) {
+            //   continue;
+            // }
+            // jResult = await ctx.service.serviceMain2Analyse.main2Analyse(
+            //   parentBh, taskNo, serverId, userData, startDate, endDate, year, month
+            // );
             setTimeout(async () => {
               // @ts-ignore
               jResult = await ctx.service.serviceMain2Analyse.main2Analyse(
-                taskNo, serverId, userData, startDate, endDate, year, month
+                parentBh, taskNo, serverId, userData, startDate, endDate, year, month
               );
             }, 0);
             break;
@@ -117,9 +130,20 @@ export default class TaskService extends Service {
             let user = server.USER_NAME;
             let pwd = server.USER_PWD;
             ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + `${taskNo}:` + '开始分析');
+
+            // // @ts-ignore
+            // jResult = await ctx.service.serviceAnalyse.callAnalyse(parentBh,
+            //   host, startDate, endDate, userData,
+            //   fx, lock, depData, year, month, day,
+            //   instanceName, port, dbName, user, pwd, taskNo, urlHead
+            // );
+            // if (jResult.code === -1) {
+            //   ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + jResult.msg);
+            // }
+
             setTimeout(async () => {
               // @ts-ignore
-              jResult = await ctx.service.serviceAnalyse.callAnalyse(
+              jResult = await ctx.service.serviceAnalyse.callAnalyse(serverId, parentBh,
                 host, startDate, endDate, userData,
                 fx, lock, depData, year, month, day,
                 instanceName, port, dbName, user, pwd, taskNo, urlHead
@@ -138,10 +162,15 @@ export default class TaskService extends Service {
             break;
           case 4: // 分析完成(数据从分析服务器向主服务器同步)
 
+            // // @ts-ignore
+            // jResult = await ctx.service.serviceAnalyse2Main.analyse2main(
+            //   parentBh, taskNo, serverId, userData, startDate, endDate, year, month
+            // );
+
             setTimeout(async () => {
               // @ts-ignore
               jResult = await ctx.service.serviceAnalyse2Main.analyse2main(
-                taskNo, serverId, userData, startDate, endDate, year, month
+                parentBh, taskNo, serverId, userData, startDate, endDate, year, month
               );
             }, 0);
 
@@ -162,6 +191,7 @@ export default class TaskService extends Service {
       jResult.msg = `${err.stack}`;
       ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + jResult.msg);
       jResult.data = null;
+
       return jResult;
     }
   };
@@ -231,7 +261,7 @@ export default class TaskService extends Service {
         // @ts-ignore
         connectInfo.option = option;
         // ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss")  + JSON.stringify(connectInfo));
-        app.redis.set(curServerId, JSON.stringify(connectInfo));
+        await app.redis.set(curServerId, JSON.stringify(connectInfo));
       }
       return jResult;
     } catch (err) {

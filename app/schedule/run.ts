@@ -9,7 +9,7 @@ exports.schedule = {
 
 // 执行任务
 function _runTask(ctx) {
-    const interval = 5000;
+    const interval = 10000;
     setTimeout(async () => {
         let jResult = await ctx.service.serviceMain.runTask();
         if (jResult.code === -1) {
@@ -20,7 +20,8 @@ function _runTask(ctx) {
 };
 
 exports.task = async function (ctx) {
-    // await ctx.service.serviceAnalyse2Main.lockTable();
+    await ctx.service.serviceTask.flushRedis();
+    await ctx.service.serviceMain.loadServerIntoRedis();
     _runTask(ctx);
 };
 
