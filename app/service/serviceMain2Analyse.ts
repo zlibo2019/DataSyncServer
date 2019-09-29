@@ -14,7 +14,7 @@ export default class Main2AnalyseService extends Service {
    * # 主服务同步到分析服务
    */
   async main2Analyse(parentBh, taskNo, serverId, userData, startDate, endDate, year, month) {
-    const { ctx,app } = this;
+    const { ctx } = this;
     let jResult: IResult
       = {
       code: 0,
@@ -22,12 +22,10 @@ export default class Main2AnalyseService extends Service {
       data: null
     };
     try {
-      let mutex = await app.redis.get(`mutex_${serverId}`);
-      if (undefined === mutex || null === mutex || Number(mutex) === 0) {
-        await app.redis.set(`mutex_${serverId}`, 1);
-      } else {
-        return jResult;
-      }
+      // let mutex = await app.redis.get(`mutex_${serverId}`);
+      // if (Number(mutex) === 1) {
+      //   return jResult;
+      // }
 
 
       ctx.logger.error('任务号：' + taskNo);
@@ -39,7 +37,7 @@ export default class Main2AnalyseService extends Service {
       jResult = await ctx.service.serviceTask.setTaskState(parentBh, taskNo, 1);   // 同步中
       if (jResult.code === -1) {
         ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + jResult.msg);
-        await app.redis.set(`mutex_${serverId}`, 0);
+        // await app.redis.set(`mutex_${serverId}`, 0);
         return jResult;
       }
 
@@ -60,27 +58,29 @@ export default class Main2AnalyseService extends Service {
         res = await ctx.service.serviceTask.setTaskState(parentBh, taskNo, 9);
         // 置为空闲 
         // @ts-ignore
-        res = await ctx.service.serviceTask.set2IdleState(serverId);
+        // res = await ctx.service.serviceTask.set2IdleState(serverId);
 
         // 置错误信息
         res = await ctx.service.serviceTask.setError(taskNo, jResult.msg);
-        await app.redis.set(`mutex_${serverId}`, 0);
+        // await app.redis.set(`mutex_${serverId}`, 0);
         return jResult;
       }
       // @ts-ignore
       jResult = await ctx.service.serviceTask.setTaskState(parentBh, taskNo, 2);    // 同步完成
       if (jResult.code === -1) {
         ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + jResult.msg);
-        await app.redis.set(`mutex_${serverId}`, 0);
+        // await app.redis.set(`mutex_${serverId}`, 0);
         return jResult;
       }
-      await app.redis.set(`mutex_${serverId}`, 0);
+      // await app.redis.set(`mutex_${serverId}`, 0);
       return jResult;
     } catch (err) {
+      // await ctx.service.serviceTask.setTaskState(parentBh, taskNo, 9);
+
       jResult.code = -1;
       jResult.msg = `${err.stack}`;
       jResult.data = null;
-      await app.redis.set(`mutex_${serverId}`, 0);
+      // await app.redis.set(`mutex_${serverId}`, 0);
       return jResult;
     }
   }
@@ -141,25 +141,20 @@ export default class Main2AnalyseService extends Service {
     let tableNameLine;
     let arr;
 
-    // @ts-ignore
-    // const transaction = await ctx.model.transaction();
+
     try {
       // 转下划线
       // @ts-ignore
       tableNameLine = ctx.service.serviceCommon.toLine(tableName);
       const table = await sequelize.import(`${root}\\model\\${tableNameLine}`);
 
-      ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + 'select准备加锁:' + taskNo);
-      // let sql = `select * from KQ_LOCK with(xlock) where lock_table = '${tableNameLine}'`;
-      // // @ts-ignore
-      // let res = await ctx.model.query(sql, { transaction });
-
-      // ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + 'res ' + taskNo + JSON.stringify(res));
+      // ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + 'select准备加锁:' + taskNo);
 
       // 清空表
       let res = await table.destroy({
         where: {},
         truncate: true,
+        logging: true,
       });
       if (undefined !== res) {
         jResult.code = -1;
@@ -183,9 +178,9 @@ export default class Main2AnalyseService extends Service {
         functionString = `ctx.model.${tableName}.findAll()`;
       }
 
-
-
       let arrs = await eval(functionString); // await ctx.model.DtUser.findAll();
+
+
       arr = await arrs.map(i => i.get({ plain: true }));
       ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + ` ${taskNo}:${tableName}记录总数:${arr.length}`);
 
@@ -193,17 +188,14 @@ export default class Main2AnalyseService extends Service {
       let msg = `taskNo:${taskNo} ${tableNameLine}  插入记录条数:` + res.length;
       ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + msg);
       // await transaction.commit();
-      ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + 'select解锁:' + taskNo);
+      // ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + 'select解锁:' + taskNo);
       return jResult;
     } catch (err) {
 
-      // await transaction.rollback();
       jResult.code = -1;
       jResult.msg = `taskNo:${taskNo} ${tableNameLine} 表错误:${err.stack}`;
       ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + jResult.msg);
-
       ctx.logger.error(err.sql);
-      // ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss")  + JSON.stringify(arr));
       jResult.data = null;
       return jResult;
     }
@@ -217,7 +209,7 @@ export default class Main2AnalyseService extends Service {
   // @ts-ignore
   async insertTableTrans(sequelize, root, tableName, condition, isHavePrimaryKey, taskNo) {
     // @ts-ignore
-    const { ctx } = this;
+    const { ctx, app } = this;
     let jResult: IResult
       = {
       code: 0,
@@ -227,28 +219,36 @@ export default class Main2AnalyseService extends Service {
 
     // console.log('kt_jl 加锁..............................');
 
-    let tableNameLine;
-    let arr;
+    // 转下划线
+    // @ts-ignore
+    let tableNameLine = ctx.service.serviceCommon.toLine(tableName);
+
+    let mutex = await app.redis.get(`mutex_${tableNameLine}`);
+    if (undefined === mutex || null === mutex || Number(mutex) === 0) {
+      await app.redis.set(`mutex_${tableNameLine}`, 1);
+    } else {
+      return jResult;
+    }
 
     // @ts-ignore
-    const transaction = await ctx.model.transaction();
+    // const transaction = await ctx.model.transaction();
     try {
-      // 转下划线
-      // @ts-ignore
-      tableNameLine = ctx.service.serviceCommon.toLine(tableName);
+
+
       const table = await sequelize.import(`${root}\\model\\${tableNameLine}`);
 
-      ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + 'select准备加锁:' + taskNo);
-      let sql = `select * from KQ_LOCK with(xlock) where lock_table = '${tableNameLine}'`;
-      // @ts-ignore
-      let res = await ctx.model.query(sql, { transaction });
+      // ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + 'select准备加锁:' + taskNo);
+      // let sql = `select * from KQ_LOCK with(xlock) where lock_table = '${tableNameLine}'`;
+      // // @ts-ignore
+      // let res = await ctx.model.query(sql, { transaction });
 
-      // ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + 'res ' + taskNo + JSON.stringify(res));
 
       // 清空表
-      res = await table.destroy({
+      let res = await table.destroy({
         where: {},
+        // transaction,
         truncate: true,
+        logging: true,
       });
       if (undefined !== res) {
         jResult.code = -1;
@@ -264,29 +264,38 @@ export default class Main2AnalyseService extends Service {
         eval(`ctx.model.${tableName}.removeAttribute('id')`);
       }
 
-      let functionString;
+      // let functionString;
+      // if (undefined !== condition) {
+      //   condition.logging = true;
+      //   // condition.transaction = transaction;
+      //   functionString = `ctx.model.${tableName}.findAll(condition)`;
+      // } else {
+      //   functionString = `ctx.model.${tableName}.findAll()`;
+      // }
+      // let arrs = await eval(functionString); // await ctx.model.DtUser.findAll();
+
+
+      let arrs;
       if (undefined !== condition) {
-        condition.logging = false;
-        functionString = `ctx.model.${tableName}.findAll(condition)`;
+        condition.logging = true;
+        arrs = await ctx.model.KtJl.findAll(condition);
       } else {
-        functionString = `ctx.model.${tableName}.findAll()`;
+        arrs = await ctx.model.KtJl.findAll();
       }
 
-
-
-      let arrs = await eval(functionString); // await ctx.model.DtUser.findAll();
-      arr = await arrs.map(i => i.get({ plain: true }));
+      let arr = await arrs.map(i => i.get({ plain: true }));
       ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + ` ${taskNo}:${tableName}记录总数:${arr.length}`);
 
+      // res = await table.bulkCreate(arr,{transaction});
       res = await table.bulkCreate(arr);
       let msg = `taskNo:${taskNo} ${tableNameLine}  插入记录条数:` + res.length;
       ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + msg);
-      await transaction.commit();
-      ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + 'select解锁:' + taskNo);
+      // await transaction.commit();
+      await app.redis.set(`mutex_${tableNameLine}`, 0);
       return jResult;
     } catch (err) {
-
-      await transaction.rollback();
+      await app.redis.set(`mutex_${tableNameLine}`, 0);
+      // await transaction.rollback();
       jResult.code = -1;
       jResult.msg = `taskNo:${taskNo} ${tableNameLine} 表错误:${err.stack}`;
       ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + jResult.msg);

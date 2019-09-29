@@ -14,17 +14,21 @@ export default class TaskService extends Service {
     try {
       // @ts-ignore
       // for 控制并发量
-      jResult = await ctx.service.serviceTask.getRunningTask();
-      if (jResult.code === -1) {
-        return jResult;
-      }
-      let curRunningTask = jResult.data;
-      ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + ' 当前任务数:' + curRunningTask);
+      // jResult = await ctx.service.serviceTask.getRunningTask();
+      // if (jResult.code === -1) {
+      //   return jResult;
+      // }
+      // let curRunningTask = jResult.data;
+      // ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + ' 当前任务数:' + curRunningTask);
 
 
 
       let maxRunningTask = app.config.program.max_running_task;
       ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + ' 允许最大任务数:' + maxRunningTask);
+
+
+
+
       // @ts-ignore
       jResult = await ctx.service.serviceTask.loopTask();
       if (jResult.code === -1) {
@@ -33,6 +37,7 @@ export default class TaskService extends Service {
       let arrTask = jResult.data;
 
       for (let i = 0; i < arrTask.length; i++) {
+        // let parentState = arrTask[i].parent_state;
         let taskNo = arrTask[i].TASK_NO;
         let parentBh = arrTask[i].PARENT_BH;
         let serverId = arrTask[i].SERVER_ID;
@@ -66,45 +71,61 @@ export default class TaskService extends Service {
         //   }
         // }
         // let curTaskState;
+        // 主服务报错了
+        // if (parentState === 3) {
+        //   await ctx.service.serviceTask.setTaskState(parentBh, taskNo, 10);
+        //   continue;
+        // }
         switch (taskState) {
           case 0: // 新任务,执行同步(从主服务器向分析服务器)
             // @ts-ignore
-            jResult = await ctx.service.serviceTask.isConflict(userData);
-            if (jResult.code === -1) {
-              continue;
-            }
-            let isConflict = jResult.data;
-            // 人员有冲突,置等待状态
-            if (isConflict) {
-              ctx.logger.error(taskNo + ':有冲突!');
-              // @ts-ignore 
-              // await ctx.service.serviceTask.setTaskState(taskNo, 8);
-              continue;
-            }
-
-            // 是否超任务数
-            if (curRunningTask >= maxRunningTask) {
-              continue;
-            }
-            curRunningTask++;
-            ctx.logger.error('当前任务数:' + curRunningTask);
-
-            // let res = await ctx.service.serviceTask.isServerIdle(serverId);
-            // // @ts-ignore
-            // if (!res.data) {
+            // jResult = await ctx.service.serviceTask.isConflict(userData);
+            // if (jResult.code === -1) {
             //   continue;
             // }
-            // jResult = await ctx.service.serviceMain2Analyse.main2Analyse(
-            //   parentBh, taskNo, serverId, userData, startDate, endDate, year, month
-            // );
-            setTimeout(async () => {
-              // @ts-ignore
-              jResult = await ctx.service.serviceMain2Analyse.main2Analyse(
-                parentBh, taskNo, serverId, userData, startDate, endDate, year, month
-              );
-            }, 0);
+            // let isConflict = jResult.data;
+
+            // // 人员有冲突,置等待状态
+            // if (isConflict) {
+            //   ctx.logger.error(taskNo + ':有冲突!');
+            //   continue;
+            // }
+
+
+            let value = await app.redis.get(`num_running_task`);
+            let numRunningTask;
+            if (undefined === value || null === value) {
+              numRunningTask = 0;
+            } else {
+              numRunningTask = Number(value);
+            }
+            ctx.logger.error('当前任务数:' + numRunningTask);
+            // 是否超任务数
+            if (numRunningTask >= maxRunningTask) {
+              continue;
+            }
+
+            let mutex = await app.redis.get(`mutex_${serverId}`);
+            if (Number(mutex) === 1) {
+              continue;
+            }
+
+            // await app.redis.set(`mutex_${serverId}`, 1);
+            // await app.redis.set(`num_running_task`, numRunningTask + 1);
+            jResult = await ctx.service.serviceMain2Analyse.main2Analyse(
+              parentBh, taskNo, serverId, userData, startDate, endDate, year, month
+            );
+
+            // setTimeout(async () => {
+            //   // @ts-ignore
+            //   jResult = await ctx.service.serviceMain2Analyse.main2Analyse(
+            //     parentBh, taskNo, serverId, userData, startDate, endDate, year, month
+            //   );
+            // }, 0);
+
             break;
           case 1: // 判断同步是否超时
+
             // @ts-ignore
             jResult = await ctx.service.serviceTask.judgeTaskTimeout(taskNo, taskState, 120 * 60 * 1000);
             if (jResult.code === -1) {
@@ -130,20 +151,9 @@ export default class TaskService extends Service {
             let user = server.USER_NAME;
             let pwd = server.USER_PWD;
             ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + `${taskNo}:` + '开始分析');
-
-            // // @ts-ignore
-            // jResult = await ctx.service.serviceAnalyse.callAnalyse(parentBh,
-            //   host, startDate, endDate, userData,
-            //   fx, lock, depData, year, month, day,
-            //   instanceName, port, dbName, user, pwd, taskNo, urlHead
-            // );
-            // if (jResult.code === -1) {
-            //   ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + jResult.msg);
-            // }
-
             setTimeout(async () => {
               // @ts-ignore
-              jResult = await ctx.service.serviceAnalyse.callAnalyse(serverId, parentBh,
+              jResult = await ctx.service.serviceAnalyse.callAnalyse(parentBh,
                 host, startDate, endDate, userData,
                 fx, lock, depData, year, month, day,
                 instanceName, port, dbName, user, pwd, taskNo, urlHead
@@ -167,12 +177,16 @@ export default class TaskService extends Service {
             //   parentBh, taskNo, serverId, userData, startDate, endDate, year, month
             // );
 
-            setTimeout(async () => {
-              // @ts-ignore
-              jResult = await ctx.service.serviceAnalyse2Main.analyse2main(
-                parentBh, taskNo, serverId, userData, startDate, endDate, year, month
-              );
-            }, 0);
+            
+            jResult = await ctx.service.serviceAnalyse2Main.analyse2main(
+              parentBh, taskNo, serverId, userData, startDate, endDate, year, month
+            );
+            // setTimeout(async () => {
+            //   // @ts-ignore
+            //   jResult = await ctx.service.serviceAnalyse2Main.analyse2main(
+            //     parentBh, taskNo, serverId, userData, startDate, endDate, year, month
+            //   );
+            // }, 0);
 
             break;
           case 5: // 判断反同步是否超时

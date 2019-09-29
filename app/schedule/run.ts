@@ -9,7 +9,7 @@ exports.schedule = {
 
 // 执行任务
 function _runTask(ctx) {
-    const interval = 10000;
+    const interval = 4000;
     setTimeout(async () => {
         let jResult = await ctx.service.serviceMain.runTask();
         if (jResult.code === -1) {

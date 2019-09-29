@@ -34,6 +34,7 @@ class CommonController extends Controller {
             let curTaskState = Number(res.TASK_STATE);
             if (curTaskState !== 3) {
                 jResult.msg = '状态已被更改,该分析结果状态更新无效!';
+                jResult = await ctx.service.serviceTask.setTaskState(res.PARENT_BH, taskNo, 9);
                 ctx.logger.error(jResult.msg);
                 ctx.failed(jResult);
                 return;
