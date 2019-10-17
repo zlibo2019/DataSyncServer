@@ -16,19 +16,19 @@ export default (appInfo: EggAppInfo) => {
 
   config.sequelize = {
     dialect: 'mssql',     // 数据库类型
-    database: 'scm_main_安丰钢厂',   // 数据库名称
-    // database: 'scm_main_sjfx15000',   // 数据库名称
+    // database: 'scm_main_安丰钢厂',   // 数据库名称
+    database: 'scm_main_sjfx15000',   // 数据库名称
     timezone: '+08:00',
     pool: {
       max: 5000,
       min: 0,
       idle: 100000,
     },
-    host: '10.16.0.10',     // 服务器
-    // host: '10.21.0.30',     // 服务器
+    // host: '10.16.0.10',     // 服务器
+    host: '10.21.0.30',     // 服务器
     port: 1433,           // 端口 
     username: 'sa',        // 用户名
-    password: '123',       // 密码
+    password: '123456',       // 密码
     dialectOptions: {
       instanceName: 'sql2014',    // 实例名
       connectTimeout: 600000,      // 连接超时时间

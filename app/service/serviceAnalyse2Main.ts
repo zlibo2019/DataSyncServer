@@ -111,20 +111,21 @@ export default class Analyse2MainService extends Service {
         table.removeAttribute('id');
       }
 
-
-      // if (undefined !== condition && null !== condition) {
-      //   condition.logging = true;
-      //   condition.transaction = transaction;
-      //   arrs = await table.findAll();
-      // } else {
-      //   arrs = await table.findAll({ transaction });
-      // }
-
       let arrs;
+      if (undefined !== condition && null !== condition) {
+        condition.logging = true;
+        // condition.transaction = transaction;
+        arrs = await table.findAll(condition);
+      } else {
+        // arrs = await table.findAll({ transaction });
+        arrs = await table.findAll();
+      }
 
-      condition.logging = false;
-      condition.transaction = transaction;
-      arrs = await table.findAll();
+
+
+      // condition.logging = false;
+      // condition.transaction = transaction;
+      // arrs = await table.findAll();
 
       // @ts-ignore
       let arr = await arrs.map(i => i.get({ plain: true }));
@@ -141,7 +142,7 @@ export default class Analyse2MainService extends Service {
       let functionString;
 
       if (undefined !== condition && null !== condition) {
-        if (tableName === 'ktjl') {
+        if (tableName === 'LrWaich') {
           condition.logging = true;
         }
 
@@ -348,7 +349,7 @@ export default class Analyse2MainService extends Service {
         if (undefined !== arrTable[i].condition && null !== arrTable[i].condition) {
           let condition = arrTable[i].condition;
           // @ts-ignore
-          jResult = ctx.service.serviceCommon.formatCondition(0, userData, startDate, endDate, year, month, condition, 1);
+          jResult = ctx.service.serviceCommon.formatCondition(0, userData, startDate, endDate, year, month, condition, 0);
           if (jResult.code === -1) {
             return jResult;
           }

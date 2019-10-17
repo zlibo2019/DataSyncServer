@@ -172,7 +172,9 @@ export default class Main2AnalyseService extends Service {
 
       let functionString;
       if (undefined !== condition) {
-        condition.logging = false;
+        if (tableName === 'LrWaich') {
+          condition.logging = true;
+        }
         functionString = `ctx.model.${tableName}.findAll(condition)`;
       } else {
         functionString = `ctx.model.${tableName}.findAll()`;
