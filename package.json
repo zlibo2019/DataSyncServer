@@ -44,7 +44,7 @@
     "npm": "^6.5.0",
     "optimize-css-assets-webpack-plugin": "^5.0.3",
     "ora": "^3.4.0",
-    "sequelize": "^5.8.9",
+    "sequelize": "^5.15.1",
     "shelljs": "^0.8.3",
     "tedious": "^5.0.0",
     "uglifyjs-webpack-plugin": "^2.2.0",
