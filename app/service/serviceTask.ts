@@ -233,8 +233,8 @@ export default class TaskService extends Service {
 
 
   /**
-    * # 查询任务状态
-    */
+   * # 查询任务状态
+   */
   async isFinished(parentBh) {
     const { ctx } = this;
     let jResult: IResult
@@ -243,12 +243,7 @@ export default class TaskService extends Service {
       msg: '',
       data: false
     };
-    // let mutexTask = await app.redis.get(`mutex_task`);
-    // if (Number(mutexTask) === 1) {
-    //   jResult.code = -1;
-    //   jResult.msg = 'task表正在使用';
-    //   return jResult;
-    // }
+
     try {
       // @ts-ignore
       let res = await ctx.model.query(
@@ -338,16 +333,6 @@ export default class TaskService extends Service {
       msg: '',
       data: null,
     };
-    // @ts-ignore
-
-    // await app.redis.set(`mutex_task`, 1);
-    // 正在执行的任务数
-    // let mutexTask = await app.redis.get(`mutex_task`);
-    // if (undefined === mutexTask || null === mutexTask || Number(mutexTask) === 0) {
-    //   await app.redis.set(`mutex_task`, 1);
-    // } else {
-    //   return jResult;
-    // }
 
     // @ts-ignore
     // const transaction = await ctx.model.transaction();
@@ -419,15 +404,6 @@ export default class TaskService extends Service {
             // transaction
           )
 
-          // // 服务器置忙碌状态
-          // res = await ctx.model.KQSERVERINFO.update({
-          //   SERVER_STATE: 1,
-          // }, {
-          //   where: {
-          //     SERVER_ID: serverId,
-          //   },
-          // });
-
           // 主表置状态
           res = await ctx.model.KQJOBINFOPARENT.update({
             TASK_STATE: 1,
@@ -440,58 +416,7 @@ export default class TaskService extends Service {
             // transaction
           });
 
-
-
           break;
-
-        // case 3: // 数据分析开始
-        //   ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + '数据分析开始:' + taskNo);
-
-        //   // @ts-ignore
-        //   res = await ctx.model.KQJOBUNITINFO.update({
-        //     TASK_END: moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
-        //     FINISH_FLAG: 1,
-        //   }, {
-        //     where: {
-        //       TASK_NO: taskNo,
-        //       TASK_STATE: taskState - 1,
-        //       FINISH_FLAG: 0,
-        //     },
-        //   });
-        //   // @ts-ignore
-        //   res = await ctx.model.KQJOBUNITINFO.create({
-        //     TASK_NO: taskNo,
-        //     SERVER_ID: serverId,
-        //     TASK_STATE: taskState,
-        //     TASK_START: moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
-        //     FINISH_FLAG: 0,
-        //   });
-
-        //   break;
-        // case 4: // 数据分析结束
-        //   ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + '数据分析结束:' + taskNo);
-
-        //   // @ts-ignore
-        //   res = await ctx.model.KQJOBUNITINFO.update({
-        //     TASK_END: moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
-        //     FINISH_FLAG: 1,
-        //   }, {
-        //     where: {
-        //       TASK_NO: taskNo,
-        //       TASK_STATE: taskState - 1,
-        //       FINISH_FLAG: 0,
-        //     },
-        //   });
-        //   // @ts-ignore
-        //   res = await ctx.model.KQJOBUNITINFO.create({
-        //     TASK_NO: taskNo,
-        //     SERVER_ID: serverId,
-        //     TASK_STATE: taskState,
-        //     TASK_START: moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
-        //     FINISH_FLAG: 0,
-        //   });
-
-        //   break;
 
         case 6: // 结束
           await app.redis.set(`num_running_task`, numRunningTask - 1);
@@ -525,25 +450,9 @@ export default class TaskService extends Service {
             });
           }
 
-          // jResult = await this.set2IdleState(serverId);
-          // if (jResult.code === -1) {
-          //   await transaction.rollback();
-          //   jResult.code = -1;
-          //   jResult.msg = 'task not find';
-          //   return jResult;
-          // }
-
           break;
         case 9: // 异常结束
           ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + '因异常强制结束:' + taskNo);
-
-          // jResult = await this.set2IdleState(serverId);
-          // if (jResult.code === -1) {
-          //   await transaction.rollback();
-          //   jResult.code = -1;
-          //   jResult.msg = 'task not find';
-          //   return jResult;
-          // }
 
           // 主表置状态
           res = await ctx.model.KQJOBINFOPARENT.update({
@@ -559,16 +468,7 @@ export default class TaskService extends Service {
           await app.redis.set(`num_running_task`, numRunningTask - 1);
           await app.redis.set(`mutex_${serverId}`, 0);
           break;
-        // case 10: // 由其他任务异常导致的中断
 
-        //   jResult = await this.set2IdleState(serverId);
-        //   if (jResult.code === -1) {
-        //     await transaction.rollback();
-        //     jResult.code = -1;
-        //     jResult.msg = 'task not find';
-        //     return jResult;
-        //   }
-        //   break;
         default:
           // @ts-ignore
           res = await ctx.model.KQJOBUNITINFO.update({
@@ -735,7 +635,7 @@ export default class TaskService extends Service {
   /**
    * # 判断任务是否超时
    */
-  async judgeTaskTimeout(parentBh,taskNo, taskState, timeOut) {
+  async judgeTaskTimeout(parentBh, taskNo, taskState, timeOut) {
     const { ctx } = this;
     let jResult: IResult
       = {
@@ -743,12 +643,7 @@ export default class TaskService extends Service {
       msg: '',
       data: 0
     };
-    // let mutexTask = await app.redis.get(`mutex_task`);
-    // if (Number(mutexTask) === 1) {
-    //   jResult.code = -1;
-    //   jResult.msg = 'task表正在使用';
-    //   return jResult;
-    // }
+
     try {
 
       let nowTime = new Date().getTime();
@@ -769,8 +664,7 @@ export default class TaskService extends Service {
           TASK_STATE: taskState,
         }
       });
-      1573020760036
-      1573039237000
+
       let startTime = nowTime;
       if (undefined !== res && null !== res) {
         startTime = new Date(res.TASK_START).getTime();

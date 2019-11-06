@@ -54,28 +54,7 @@ export default class TaskService extends Service {
         let day = arrTask[i].TASK_DAY;
         let taskState = Number(arrTask[i].TASK_STATE);
 
-        // // 如果人员为空,从部门生成
-        // if (taskState === 0 || taskState === 4) {
-        //   if (null === userData || '' === userData) {
-        //     // @ts-ignore
-        //     jResult = await ctx.service.serviceCommon.getUserByDep(depData);
-        //     if (jResult.code === -1) {
-        //       return jResult;
-        //     }
-        //     let arrUser = jResult.data;
-        //     let arrUserId = new Array();
-        //     for (let i = 0; i < arrUser.length; i++) {
-        //       arrUserId.push(arrUser[i].user_serial);
-        //     }
-        //     userData = arrUserId.join(',');
-        //   }
-        // }
-        // let curTaskState;
-        // 主服务报错了
-        // if (parentState === 3) {
-        //   await ctx.service.serviceTask.setTaskState(parentBh, taskNo, 10);
-        //   continue;
-        // }
+        
         let timeOut = this.config.program.task_timeout;
         if (undefined === timeOut) {
           timeOut = 20 * 60 * 1000;
@@ -83,20 +62,7 @@ export default class TaskService extends Service {
 
         switch (taskState) {
           case 0: // 新任务,执行同步(从主服务器向分析服务器)
-            // @ts-ignore
-            // jResult = await ctx.service.serviceTask.isConflict(userData);
-            // if (jResult.code === -1) {
-            //   continue;
-            // }
-            // let isConflict = jResult.data;
-
-            // // 人员有冲突,置等待状态
-            // if (isConflict) {
-            //   ctx.logger.error(taskNo + ':有冲突!');
-            //   continue;
-            // }
-
-
+        
             let value = await app.redis.get(`num_running_task`);
             let numRunningTask;
             if (undefined === value || null === value) {
@@ -115,18 +81,9 @@ export default class TaskService extends Service {
               continue;
             }
 
-            // await app.redis.set(`mutex_${serverId}`, 1);
-            // await app.redis.set(`num_running_task`, numRunningTask + 1);
             jResult = await ctx.service.serviceMain2Analyse.main2Analyse(
               parentBh, taskNo, serverId, userData, startDate, endDate, year, month
             );
-
-            // setTimeout(async () => {
-            //   // @ts-ignore
-            //   jResult = await ctx.service.serviceMain2Analyse.main2Analyse(
-            //     parentBh, taskNo, serverId, userData, startDate, endDate, year, month
-            //   );
-            // }, 0);
 
             break;
           case 1: // 判断同步是否超时
@@ -177,21 +134,10 @@ export default class TaskService extends Service {
             break;
           case 4: // 分析完成(数据从分析服务器向主服务器同步)
 
-            // // @ts-ignore
-            // jResult = await ctx.service.serviceAnalyse2Main.analyse2main(
-            //   parentBh, taskNo, serverId, userData, startDate, endDate, year, month
-            // );
-
 
             jResult = await ctx.service.serviceAnalyse2Main.analyse2main(
               parentBh, taskNo, serverId, userData, startDate, endDate, year, month
             );
-            // setTimeout(async () => {
-            //   // @ts-ignore
-            //   jResult = await ctx.service.serviceAnalyse2Main.analyse2main(
-            //     parentBh, taskNo, serverId, userData, startDate, endDate, year, month
-            //   );
-            // }, 0);
 
             break;
           case 5: // 判断反同步是否超时
