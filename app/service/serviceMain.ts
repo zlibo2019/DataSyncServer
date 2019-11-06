@@ -76,6 +76,11 @@ export default class TaskService extends Service {
         //   await ctx.service.serviceTask.setTaskState(parentBh, taskNo, 10);
         //   continue;
         // }
+        let timeOut = this.config.program.task_timeout;
+        if (undefined === timeOut) {
+          timeOut = 20 * 60 * 1000;
+        }
+
         switch (taskState) {
           case 0: // 新任务,执行同步(从主服务器向分析服务器)
             // @ts-ignore
@@ -127,7 +132,7 @@ export default class TaskService extends Service {
           case 1: // 判断同步是否超时
 
             // @ts-ignore
-            jResult = await ctx.service.serviceTask.judgeTaskTimeout(taskNo, taskState, 120 * 60 * 1000);
+            jResult = await ctx.service.serviceTask.judgeTaskTimeout(parentBh,taskNo, taskState, timeOut);
             if (jResult.code === -1) {
               continue;
             }
@@ -165,7 +170,7 @@ export default class TaskService extends Service {
             break;
           case 3: // 判断分析是否超时
             // @ts-ignore
-            jResult = await ctx.service.serviceTask.judgeTaskTimeout(taskNo, taskState, 120 * 60 * 1000);
+            jResult = await ctx.service.serviceTask.judgeTaskTimeout(parentBh,taskNo, taskState, timeOut);
             if (jResult.code === -1) {
               continue;
             }
@@ -177,7 +182,7 @@ export default class TaskService extends Service {
             //   parentBh, taskNo, serverId, userData, startDate, endDate, year, month
             // );
 
-            
+
             jResult = await ctx.service.serviceAnalyse2Main.analyse2main(
               parentBh, taskNo, serverId, userData, startDate, endDate, year, month
             );
@@ -190,8 +195,9 @@ export default class TaskService extends Service {
 
             break;
           case 5: // 判断反同步是否超时
+         
             // @ts-ignore
-            jResult = await ctx.service.serviceTask.judgeTaskTimeout(taskNo, taskState, 120 * 60 * 1000);
+            jResult = await ctx.service.serviceTask.judgeTaskTimeout(parentBh,taskNo, taskState, timeOut);
             if (jResult.code === -1) {
               continue;
             }

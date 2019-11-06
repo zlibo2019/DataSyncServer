@@ -1,4 +1,4 @@
-
+import moment = require("moment");
 module.exports = app => {
   const {
     STRING,
@@ -14,11 +14,11 @@ module.exports = app => {
     },
     START_DATE: {
       type: DATE,
-      allowNull: true
+      allowNull: true,
     },
     END_DATE: {
       type: DATE,
-      allowNull: true
+      allowNull: true,
     },
     USER_DATA: {
       type: STRING,
@@ -42,11 +42,33 @@ module.exports = app => {
     },
     TASK_START: {
       type: STRING,
-      allowNull: true
+      allowNull: true,
+      get: function () {
+        // @ts-ignore
+        let value = this.getDataValue('TASK_START');
+        let res;
+        if (null === value || '' === value) {
+          res = null;
+        } else {
+          res = moment(value).utcOffset(0).format('YYYY-MM-DD HH:mm:ss');
+        }
+        return res;
+      },
     },
     TASK_END: {
       type: STRING,
       allowNull: true,
+      get: function () {
+        // @ts-ignore
+        let value = this.getDataValue('TASK_END');
+        let res;
+        if (null === value || '' === value) {
+          res = null;
+        } else {
+          res = moment(value).utcOffset(0).format('YYYY-MM-DD HH:mm:ss');
+        }
+        return res;
+      },
     },
     GLY_NO: {
       type: STRING,
@@ -77,9 +99,9 @@ module.exports = app => {
       allowNull: true
     },
   }, {
-      tableName: 'KQ_JOB_INFO',
-      freezeTableName: true, // Model 对应的表名将与model名相同
-      timestamps: false,//去除createAt updateAt
-    });
+    tableName: 'KQ_JOB_INFO',
+    freezeTableName: true, // Model 对应的表名将与model名相同
+    timestamps: false,//去除createAt updateAt
+  });
   return KQ_JOB_INFO;
 };

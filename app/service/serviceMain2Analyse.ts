@@ -75,8 +75,6 @@ export default class Main2AnalyseService extends Service {
       // await app.redis.set(`mutex_${serverId}`, 0);
       return jResult;
     } catch (err) {
-      // await ctx.service.serviceTask.setTaskState(parentBh, taskNo, 9);
-
       jResult.code = -1;
       jResult.msg = `${err.stack}`;
       jResult.data = null;
@@ -244,6 +242,7 @@ export default class Main2AnalyseService extends Service {
       // // @ts-ignore
       // let res = await ctx.model.query(sql, { transaction });
 
+      // console.log('connect info:' + JSON.stringify(table.sequelize.config));
 
       // 清空表
       let res = await table.destroy({

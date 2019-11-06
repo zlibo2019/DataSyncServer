@@ -494,8 +494,8 @@ export default class TaskService extends Service {
         //   break;
 
         case 6: // 结束
-        await app.redis.set(`num_running_task`, numRunningTask - 1);
-        await app.redis.set(`mutex_${serverId}`, 0);
+          await app.redis.set(`num_running_task`, numRunningTask - 1);
+          await app.redis.set(`mutex_${serverId}`, 0);
           // 更新任务块结束时间
           res = await ctx.model.KQJOBUNITINFO.update({
             TASK_END: moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
@@ -735,7 +735,7 @@ export default class TaskService extends Service {
   /**
    * # 判断任务是否超时
    */
-  async judgeTaskTimeout(taskNo, taskState, value) {
+  async judgeTaskTimeout(parentBh,taskNo, taskState, timeOut) {
     const { ctx } = this;
     let jResult: IResult
       = {
@@ -752,22 +752,32 @@ export default class TaskService extends Service {
     try {
 
       let nowTime = new Date().getTime();
-      let res = await ctx.model.KQJOBUNITINFO.findOne({
+      // 暂时关闭
+      // let res = await ctx.model.KQJOBUNITINFO.findOne({
+      //   attributes: ['TASK_START'],
+      //   where: {
+      //     TASK_NO: taskNo,
+      //     TASK_STATE: taskState,
+      //     FINISH_FLAG: 0,
+      //   }
+      // });
+
+      let res = await ctx.model.KQJOBINFO.findOne({
         attributes: ['TASK_START'],
         where: {
           TASK_NO: taskNo,
           TASK_STATE: taskState,
-          FINISH_FLAG: 0,
         }
       });
-
+      1573020760036
+      1573039237000
       let startTime = nowTime;
       if (undefined !== res && null !== res) {
         startTime = new Date(res.TASK_START).getTime();
       };
 
       let interval = nowTime - startTime;
-      if (interval > value) {
+      if (interval > timeOut) {
         ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + `${taskNo}:` + '执行超时');
 
         // 停止当前操作

@@ -174,11 +174,8 @@ export default class Analyse2MainService extends Service {
       functionString = `ctx.model.${tableName}.bulkCreate(arr,{ transaction })`;
       await eval(functionString);
 
-
-      await transaction.commit();
-
       await app.redis.set(`mutex_${tableNameLine}`, 0);
-
+      await transaction.commit();
       return jResult;
     } catch (err) {
       await app.redis.set(`mutex_${tableNameLine}`, 0);

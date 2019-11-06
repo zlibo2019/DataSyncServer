@@ -41,6 +41,7 @@ export default class AnalyseService extends Service {
       form.field('lock', lock);
       form.field('callback', `${ip}:${port}/analizeResult`);
       form.field('host', host);
+      instanceName = instanceName == null ? '' : instanceName;
       form.field('InstanceName', instanceName);
       form.field('port', dbPort);
       form.field('dbName', dbName);
