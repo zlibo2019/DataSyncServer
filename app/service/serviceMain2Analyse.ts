@@ -33,6 +33,7 @@ export default class Main2AnalyseService extends Service {
         ctx.logger.error('201909161714513368aa' + moment(new Date()).format("YYYY-MM-DD HH:mm:ss"));
       }
 
+
       // @ts-ignore
       jResult = await ctx.service.serviceTask.setTaskState(parentBh, taskNo, 1);   // 同步中
       if (jResult.code === -1) {
@@ -40,13 +41,21 @@ export default class Main2AnalyseService extends Service {
         // await app.redis.set(`mutex_${serverId}`, 0);
         return jResult;
       }
-
-
       ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + `${taskNo}:` + '开始同步');
+
+      // let mutex = await app.redis.get(`mutex_synTable_${serverId}`);
+      // if (undefined === mutex || null === mutex || Number(mutex) === 0) {
+      //   await app.redis.set(`mutex_synTable_${serverId}`, 1);
+      // } else {
+      //   return jResult;
+      // }
 
       jResult = await this.insertBulkTable(
         serverId, userData, startDate, endDate, year, month, taskNo,
       );
+
+      // await app.redis.set(`mutex_synTable_${serverId}`, 0);
+
       if (jResult.code === -1) {
         ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + jResult.msg);
 
@@ -152,7 +161,7 @@ export default class Main2AnalyseService extends Service {
       let res = await table.destroy({
         where: {},
         truncate: true,
-        logging: true,
+        logging: false,
       });
       if (undefined !== res) {
         jResult.code = -1;
@@ -171,7 +180,7 @@ export default class Main2AnalyseService extends Service {
       let functionString;
       if (undefined !== condition) {
         if (tableName === 'LrWaich') {
-          condition.logging = true;
+          condition.logging = false;
         }
         functionString = `ctx.model.${tableName}.findAll(condition)`;
       } else {
@@ -223,12 +232,12 @@ export default class Main2AnalyseService extends Service {
     // @ts-ignore
     let tableNameLine = ctx.service.serviceCommon.toLine(tableName);
 
-    let mutex = await app.redis.get(`mutex_${tableNameLine}`);
-    if (undefined === mutex || null === mutex || Number(mutex) === 0) {
-      await app.redis.set(`mutex_${tableNameLine}`, 1);
-    } else {
-      return jResult;
-    }
+    // let mutex = await app.redis.get(`mutex_${tableNameLine}`);
+    // if (undefined === mutex || null === mutex || Number(mutex) === 0) {
+    //   await app.redis.set(`mutex_${tableNameLine}`, 1);
+    // } else {
+    //   return jResult;
+    // }
 
     // @ts-ignore
     // const transaction = await ctx.model.transaction();
@@ -249,7 +258,7 @@ export default class Main2AnalyseService extends Service {
         where: {},
         // transaction,
         truncate: true,
-        logging: true,
+        logging: false,
       });
       if (undefined !== res) {
         jResult.code = -1;
@@ -278,7 +287,7 @@ export default class Main2AnalyseService extends Service {
 
       let arrs;
       if (undefined !== condition) {
-        condition.logging = true;
+        condition.logging = false;
         arrs = await ctx.model.KtJl.findAll(condition);
       } else {
         arrs = await ctx.model.KtJl.findAll();
@@ -292,10 +301,10 @@ export default class Main2AnalyseService extends Service {
       let msg = `taskNo:${taskNo} ${tableNameLine}  插入记录条数:` + res.length;
       ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + msg);
       // await transaction.commit();
-      await app.redis.set(`mutex_${tableNameLine}`, 0);
+      // await app.redis.set(`mutex_${tableNameLine}`, 0);
       return jResult;
     } catch (err) {
-      await app.redis.set(`mutex_${tableNameLine}`, 0);
+      // await app.redis.set(`mutex_${tableNameLine}`, 0);
       // await transaction.rollback();
       jResult.code = -1;
       jResult.msg = `taskNo:${taskNo} ${tableNameLine} 表错误:${err.stack}`;

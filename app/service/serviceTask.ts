@@ -450,6 +450,15 @@ export default class TaskService extends Service {
             });
           }
 
+          // 置mutex_server全部为0
+          let keys = await app.redis.keys('mutex_*');
+          for (let i = 0; i < keys.length; i++) {
+            let curServerId = keys[i];
+            await app.redis.set(curServerId, 0);
+          }
+
+          await app.redis.set(`num_running_task`, 0);
+          
           break;
         case 9: // 异常结束
           ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + '因异常强制结束:' + taskNo);
@@ -465,10 +474,7 @@ export default class TaskService extends Service {
             // transaction
           });
 
-          await app.redis.set(`num_running_task`, numRunningTask - 1);
-          await app.redis.set(`mutex_${serverId}`, 0);
           break;
-
         default:
           // @ts-ignore
           res = await ctx.model.KQJOBUNITINFO.update({

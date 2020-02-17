@@ -12,22 +12,18 @@ export default class TaskService extends Service {
       data: null
     };
     try {
-      // @ts-ignore
-      // for 控制并发量
-      // jResult = await ctx.service.serviceTask.getRunningTask();
-      // if (jResult.code === -1) {
-      //   return jResult;
-      // }
-      // let curRunningTask = jResult.data;
-      // ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + ' 当前任务数:' + curRunningTask);
 
+      // init
+      let keys = await app.redis.keys('mutex_*');
+      for (let i = 0; i < keys.length; i++) {
+        let curServerId = keys[i];
+        await app.redis.set(curServerId, 0);
+      }
+      await app.redis.set(`num_running_task`, 0);
 
 
       let maxRunningTask = app.config.program.max_running_task;
       ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + ' 允许最大任务数:' + maxRunningTask);
-
-
-
 
       // @ts-ignore
       jResult = await ctx.service.serviceTask.loopTask();
@@ -35,6 +31,10 @@ export default class TaskService extends Service {
         return jResult;
       }
       let arrTask = jResult.data;
+
+      if (arrTask.length === 0) {
+        await app.redis.set(`num_running_task`, 0);
+      }
 
       for (let i = 0; i < arrTask.length; i++) {
         // let parentState = arrTask[i].parent_state;
@@ -54,7 +54,7 @@ export default class TaskService extends Service {
         let day = arrTask[i].TASK_DAY;
         let taskState = Number(arrTask[i].TASK_STATE);
 
-        
+
         let timeOut = this.config.program.task_timeout;
         if (undefined === timeOut) {
           timeOut = 20 * 60 * 1000;
@@ -62,7 +62,6 @@ export default class TaskService extends Service {
 
         switch (taskState) {
           case 0: // 新任务,执行同步(从主服务器向分析服务器)
-        
             let value = await app.redis.get(`num_running_task`);
             let numRunningTask;
             if (undefined === value || null === value) {
@@ -73,6 +72,7 @@ export default class TaskService extends Service {
             ctx.logger.error('当前任务数:' + numRunningTask);
             // 是否超任务数
             if (numRunningTask >= maxRunningTask) {
+              ctx.logger.error('最大任务数:' + maxRunningTask);
               continue;
             }
 
@@ -89,7 +89,7 @@ export default class TaskService extends Service {
           case 1: // 判断同步是否超时
 
             // @ts-ignore
-            jResult = await ctx.service.serviceTask.judgeTaskTimeout(parentBh,taskNo, taskState, timeOut);
+            jResult = await ctx.service.serviceTask.judgeTaskTimeout(parentBh, taskNo, taskState, timeOut);
             if (jResult.code === -1) {
               continue;
             }
@@ -127,7 +127,7 @@ export default class TaskService extends Service {
             break;
           case 3: // 判断分析是否超时
             // @ts-ignore
-            jResult = await ctx.service.serviceTask.judgeTaskTimeout(parentBh,taskNo, taskState, timeOut);
+            jResult = await ctx.service.serviceTask.judgeTaskTimeout(parentBh, taskNo, taskState, timeOut);
             if (jResult.code === -1) {
               continue;
             }
@@ -141,9 +141,9 @@ export default class TaskService extends Service {
 
             break;
           case 5: // 判断反同步是否超时
-         
+
             // @ts-ignore
-            jResult = await ctx.service.serviceTask.judgeTaskTimeout(parentBh,taskNo, taskState, timeOut);
+            jResult = await ctx.service.serviceTask.judgeTaskTimeout(parentBh, taskNo, taskState, timeOut);
             if (jResult.code === -1) {
               continue;
             }
