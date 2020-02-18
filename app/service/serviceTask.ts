@@ -322,6 +322,17 @@ export default class TaskService extends Service {
     }
   }
 
+  async initRedis() {
+    const { app } = this;
+    // 置mutex_server全部为0
+    let keys = await app.redis.keys('mutex_*');
+    for (let i = 0; i < keys.length; i++) {
+      let curServerId = keys[i];
+      await app.redis.set(curServerId, 0);
+    }
+    await app.redis.set(`num_running_task`, 0);
+  }
+
   /**
    * # 置状态
    */
@@ -390,7 +401,13 @@ export default class TaskService extends Service {
         case 1: // 数据从主服务器向分析服务器同步
 
           await app.redis.set(`num_running_task`, numRunningTask + 1);
-          await app.redis.set(`mutex_${serverId}`, 1);
+          res = await app.redis.set(`mutex_${serverId}`, 1);
+          // if (serverId == '2019092710145824') {
+
+          //   let mutex = await app.redis.get(`mutex_${serverId}`);
+
+          //    console.log(`${moment(new Date()).format("YYYY-MM-DD HH:mm:ss")}没有冲突，占用 ${mutex}`);
+          // }
 
           // 任务时段明细表新增记录
           // @ts-ignore
@@ -421,6 +438,10 @@ export default class TaskService extends Service {
         case 6: // 结束
           await app.redis.set(`num_running_task`, numRunningTask - 1);
           await app.redis.set(`mutex_${serverId}`, 0);
+          // if (serverId == '2019092710145824') {
+          //   console.log(`${moment(new Date()).format("YYYY-MM-DD HH:mm:ss")}使用完毕，放回`);
+          // }
+          // console.log(`${serverId}置0`);
           // 更新任务块结束时间
           res = await ctx.model.KQJOBUNITINFO.update({
             TASK_END: moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
@@ -448,17 +469,10 @@ export default class TaskService extends Service {
               },
               // transaction
             });
+
+            await this.initRedis();
           }
 
-          // 置mutex_server全部为0
-          let keys = await app.redis.keys('mutex_*');
-          for (let i = 0; i < keys.length; i++) {
-            let curServerId = keys[i];
-            await app.redis.set(curServerId, 0);
-          }
-
-          await app.redis.set(`num_running_task`, 0);
-          
           break;
         case 9: // 异常结束
           ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + '因异常强制结束:' + taskNo);
@@ -474,6 +488,7 @@ export default class TaskService extends Service {
             // transaction
           });
 
+          await this.initRedis();
           break;
         default:
           // @ts-ignore

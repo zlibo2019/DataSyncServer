@@ -22,12 +22,6 @@ export default class Main2AnalyseService extends Service {
       data: null
     };
     try {
-      // let mutex = await app.redis.get(`mutex_${serverId}`);
-      // if (Number(mutex) === 1) {
-      //   return jResult;
-      // }
-
-
       ctx.logger.error('任务号：' + taskNo);
       if (taskNo === '201909161714513368') {
         ctx.logger.error('201909161714513368aa' + moment(new Date()).format("YYYY-MM-DD HH:mm:ss"));
@@ -38,7 +32,6 @@ export default class Main2AnalyseService extends Service {
       jResult = await ctx.service.serviceTask.setTaskState(parentBh, taskNo, 1);   // 同步中
       if (jResult.code === -1) {
         ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + jResult.msg);
-        // await app.redis.set(`mutex_${serverId}`, 0);
         return jResult;
       }
       ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + `${taskNo}:` + '开始同步');
@@ -71,31 +64,27 @@ export default class Main2AnalyseService extends Service {
 
         // 置错误信息
         res = await ctx.service.serviceTask.setError(taskNo, jResult.msg);
-        // await app.redis.set(`mutex_${serverId}`, 0);
         return jResult;
       }
       // @ts-ignore
       jResult = await ctx.service.serviceTask.setTaskState(parentBh, taskNo, 2);    // 同步完成
       if (jResult.code === -1) {
         ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + jResult.msg);
-        // await app.redis.set(`mutex_${serverId}`, 0);
         return jResult;
       }
-      // await app.redis.set(`mutex_${serverId}`, 0);
       return jResult;
     } catch (err) {
       jResult.code = -1;
       jResult.msg = `${err.stack}`;
       jResult.data = null;
-      // await app.redis.set(`mutex_${serverId}`, 0);
       return jResult;
     }
   }
 
   /**
-    * # 同步单表
-    * isForce 是否强制删除原表 1是0否
-    */
+   * # 同步单表
+   * isForce 是否强制删除原表 1是0否
+   */
   // @ts-ignore
   async insertTable(sequelize, root, tableName, condition, isHavePrimaryKey, taskNo) {
     // @ts-ignore

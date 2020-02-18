@@ -73,7 +73,7 @@ export default (appInfo: EggAppInfo) => {
 
   config.logger = {
     level: 'INFO',
-    consoleLevel: 'NONE',
+    consoleLevel: 'INFO',//'NONE', //
   };
 
 

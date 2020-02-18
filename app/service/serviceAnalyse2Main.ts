@@ -26,7 +26,6 @@ export default class Analyse2MainService extends Service {
       jResult = await ctx.service.serviceTask.setTaskState(parentBh, taskNo, 5);    // 反向同步中
       if (jResult.code === -1) {
         ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + jResult.msg);
-        // await app.redis.set(`mutex_${serverId}`, 0);
         return jResult;
       }
 

@@ -13,15 +13,6 @@ export default class TaskService extends Service {
     };
     try {
 
-      // init
-      let keys = await app.redis.keys('mutex_*');
-      for (let i = 0; i < keys.length; i++) {
-        let curServerId = keys[i];
-        await app.redis.set(curServerId, 0);
-      }
-      await app.redis.set(`num_running_task`, 0);
-
-
       let maxRunningTask = app.config.program.max_running_task;
       ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + ' 允许最大任务数:' + maxRunningTask);
 
@@ -59,7 +50,8 @@ export default class TaskService extends Service {
         if (undefined === timeOut) {
           timeOut = 20 * 60 * 1000;
         }
-
+        
+        let boolBreak = false;
         switch (taskState) {
           case 0: // 新任务,执行同步(从主服务器向分析服务器)
             let value = await app.redis.get(`num_running_task`);
@@ -70,6 +62,9 @@ export default class TaskService extends Service {
               numRunningTask = Number(value);
             }
             ctx.logger.error('当前任务数:' + numRunningTask);
+            // console.log('当前任务数:' + numRunningTask);
+            
+
             // 是否超任务数
             if (numRunningTask >= maxRunningTask) {
               ctx.logger.error('最大任务数:' + maxRunningTask);
@@ -77,13 +72,17 @@ export default class TaskService extends Service {
             }
 
             let mutex = await app.redis.get(`mutex_${serverId}`);
-            if (Number(mutex) === 1) {
+
+            if (Number(mutex) == 1) {
               continue;
             }
 
             jResult = await ctx.service.serviceMain2Analyse.main2Analyse(
               parentBh, taskNo, serverId, userData, startDate, endDate, year, month
             );
+            if(jResult.code == -1){
+              boolBreak = true;
+            }
 
             break;
           case 1: // 判断同步是否超时
@@ -113,6 +112,7 @@ export default class TaskService extends Service {
             let user = server.USER_NAME;
             let pwd = server.USER_PWD;
             ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + `${taskNo}:` + '开始分析');
+
             setTimeout(async () => {
               // @ts-ignore
               jResult = await ctx.service.serviceAnalyse.callAnalyse(parentBh,
@@ -124,6 +124,7 @@ export default class TaskService extends Service {
                 ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + jResult.msg);
               }
             }, 0);
+
             break;
           case 3: // 判断分析是否超时
             // @ts-ignore
@@ -138,7 +139,9 @@ export default class TaskService extends Service {
             jResult = await ctx.service.serviceAnalyse2Main.analyse2main(
               parentBh, taskNo, serverId, userData, startDate, endDate, year, month
             );
-
+            if(jResult.code == -1){
+              boolBreak = true;
+            }
             break;
           case 5: // 判断反同步是否超时
 
@@ -149,6 +152,9 @@ export default class TaskService extends Service {
             }
             break;
           default:
+        }
+        if(boolBreak){
+          break;
         }
       }
       return jResult;

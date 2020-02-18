@@ -20,6 +20,7 @@ function _runTask(ctx) {
 };
 
 exports.task = async function (ctx) {
+    // await ctx.service.serviceTask.initRedis();
     await ctx.service.serviceTask.flushRedis();
     await ctx.service.serviceMain.loadServerIntoRedis();
     _runTask(ctx);
