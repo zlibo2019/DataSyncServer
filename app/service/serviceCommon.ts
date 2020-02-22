@@ -100,7 +100,7 @@ export default class CommonService extends Service {
       let beginMonth = moment(yearMonth).add(-1, 'month').format('YYYY-MM');
       let endMonth = moment(yearMonth).add(1, 'month').format('YYYY-MM');
       startDate = moment(startDate).add(offset * -2, 'day').format('YYYY-MM-DD HH:mm:ss');
-      endDate = moment(endDate).add(offset * 2, 'day').format('YYYY-MM-DD HH:mm:ss');
+      endDate = moment(endDate).add(offset * 2+1, 'day').format('YYYY-MM-DD HH:mm:ss');
       sCondition = sCondition.replace('@dep', `${depData}`)
         .replace('@user', userData).replace(`["`, `[`).replace(`"]`, `]`)
         .replace('@begin_date', startDate)
