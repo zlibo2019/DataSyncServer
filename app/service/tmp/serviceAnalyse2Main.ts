@@ -23,25 +23,16 @@ export default class Analyse2MainService extends Service {
     };
     try {
 
+
       jResult = await ctx.service.serviceTask.setTaskState(parentBh, taskNo, 5);    // 反向同步中
       if (jResult.code === -1) {
         ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + jResult.msg);
         return jResult;
       }
 
-      // let mutex = await app.redis.get(`mutex_reverseSynTable_${serverId}`);
-      // if (undefined === mutex || null === mutex || Number(mutex) === 0) {
-      //   await app.redis.set(`mutex_reverseSynTable_${serverId}`, 1);
-      // } else {
-      //   return jResult;
-      // }
-
       jResult = await this.reverseSynBulkTable(
         serverId, userData, startDate, endDate, year, month, taskNo,
       );
-
-      // await app.redis.set(`mutex_reverseSynTable_${serverId}`, 0);
-     
       if (jResult.code === -1) {
         ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + jResult.msg);
 
@@ -60,7 +51,7 @@ export default class Analyse2MainService extends Service {
         return jResult;
       }
       // @ts-ignore
- 
+
 
 
       jResult = await ctx.service.serviceTask.setTaskState(parentBh, taskNo, 6);     // 所有流程完成
@@ -104,12 +95,12 @@ export default class Analyse2MainService extends Service {
       // @ts-ignore
       tableNameLine = ctx.service.serviceCommon.toLine(tableName);
 
-      // let mutex = await app.redis.get(`mutex_${tableNameLine}`);
-      // if (undefined === mutex || null === mutex || Number(mutex) === 0) {
-      //   await app.redis.set(`mutex_${tableNameLine}`, 1);
-      // } else {
-      //   return jResult;
-      // }
+      let mutex = await app.redis.get(`mutex_${tableNameLine}`);
+      if (undefined === mutex || null === mutex || Number(mutex) === 0) {
+        await app.redis.set(`mutex_${tableNameLine}`, 1);
+      } else {
+        return jResult;
+      }
 
       const table = await sequelize.import(`${root}\\model\\${tableNameLine}`);
 
@@ -121,7 +112,7 @@ export default class Analyse2MainService extends Service {
 
       let arrs;
       if (undefined !== condition && null !== condition) {
-        condition.logging = false;
+        condition.logging = true;
         // condition.transaction = transaction;
         arrs = await table.findAll(condition);
       } else {
@@ -151,7 +142,7 @@ export default class Analyse2MainService extends Service {
 
       if (undefined !== condition && null !== condition) {
         if (tableName === 'LrWaich') {
-          condition.logging = false;
+          condition.logging = true;
         }
 
         condition.transaction = transaction;
@@ -182,11 +173,11 @@ export default class Analyse2MainService extends Service {
       functionString = `ctx.model.${tableName}.bulkCreate(arr,{ transaction })`;
       await eval(functionString);
 
-      // await app.redis.set(`mutex_${tableNameLine}`, 0);
+      await app.redis.set(`mutex_${tableNameLine}`, 0);
       await transaction.commit();
       return jResult;
     } catch (err) {
-      // await app.redis.set(`mutex_${tableNameLine}`, 0);
+      await app.redis.set(`mutex_${tableNameLine}`, 0);
       await transaction.rollback();
       jResult.code = -1;
       jResult.msg = `${tableNameLine}${err.stack}`;
@@ -229,12 +220,12 @@ export default class Analyse2MainService extends Service {
       let arr = await arrs.map(i => i.get({ plain: true }));
 
 
-      // let mutex = await app.redis.get(`mutex_kt_jl`);
-      // if (undefined === mutex || null === mutex || Number(mutex) === 0) {
-      //   await app.redis.set(`mutex_kt_jl`, 1);
-      // } else {
-      //   return jResult;
-      // }
+      let mutex = await app.redis.get(`mutex_kt_jl`);
+      if (undefined === mutex || null === mutex || Number(mutex) === 0) {
+        await app.redis.set(`mutex_kt_jl`, 1);
+      } else {
+        return jResult;
+      }
 
       // 加锁 更新kt_jl 
       // ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + 'update准备加锁:' + taskNo);
@@ -261,7 +252,7 @@ export default class Analyse2MainService extends Service {
         where: {},
         transaction,
         truncate: true,
-        logging: false,
+        logging: true,
       });
       if (undefined !== res) {
         ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + `考勤记录清除失败`);
@@ -287,10 +278,10 @@ export default class Analyse2MainService extends Service {
       await transaction.commit();
       // ctx.logger.error(moment(new Date()).format("YYYY-MM-DD HH:mm:ss") + 'update解锁:' + taskNo);
 
-      // await app.redis.set(`mutex_kt_jl`, 0);
+      await app.redis.set(`mutex_kt_jl`, 0);
       return jResult;
     } catch (err) {
-      // await app.redis.set(`mutex_kt_jl`, 0);
+      await app.redis.set(`mutex_kt_jl`, 0);
       await transaction.rollback();
       jResult.code = -1;
       jResult.msg = `${err.stack}`;
@@ -299,9 +290,6 @@ export default class Analyse2MainService extends Service {
       return jResult;
     }
   }
-
-
-
 
 
 
