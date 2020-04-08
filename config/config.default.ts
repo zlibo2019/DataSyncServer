@@ -81,8 +81,8 @@ export default (appInfo: EggAppInfo) => {
     current_port: 7001,
     connectTimeout: 1800000,
     max_running_task: 10,
-    task_timeout: 300000, //300000,
-    expirt_day: 30, // 单位 天
+    task_timeout: 600000, //300000,
+    // expirt_day: 30, // 单位 天
     insertTableList: [
       {
         name: 'DtUser',

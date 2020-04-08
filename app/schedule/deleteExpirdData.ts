@@ -1,7 +1,7 @@
 exports.schedule = {
     type: 'worker',
     // cron: '0 0 3 * * *',
-    interval: '172800s',  //'172800s',
+    interval: '86400s',  //'86400s',
     // immediate: true,
 };
 

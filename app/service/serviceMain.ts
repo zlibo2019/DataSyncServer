@@ -70,6 +70,7 @@ export default class TaskService extends Service {
             jResult = await ctx.service.serviceTask.judgeNewTaskTimeout();
             if (jResult.data == 1) {
               await ctx.service.serviceTask.setTaskState(parentBh, taskNo, 9);
+              await ctx.service.serviceTask.setError(taskNo, "判断无任务时超时");
               return jResult;
             }
           }
@@ -82,6 +83,7 @@ export default class TaskService extends Service {
             jResult = await ctx.service.serviceTask.judgeNewTaskTimeout();
             if (jResult.data == 1) {
               await ctx.service.serviceTask.setTaskState(parentBh, taskNo, 9);
+              await ctx.service.serviceTask.setError(taskNo, "判断是否超最大任务时超时");
               return jResult;
             }
             continue;
@@ -94,6 +96,7 @@ export default class TaskService extends Service {
             jResult = await ctx.service.serviceTask.judgeNewTaskTimeout();
             if (jResult.data == 1) {
               await ctx.service.serviceTask.setTaskState(parentBh, taskNo, 9);
+              await ctx.service.serviceTask.setError(taskNo, "判断互斥时超时");
               return jResult;
             }
 
@@ -293,6 +296,9 @@ export default class TaskService extends Service {
     };
     try {
       let expirtDay = this.config.program.expirt_day;
+      if ( undefined == expirtDay || null == expirtDay) {
+        expirtDay = 30;
+      }
       // @ts-ignore
       await ctx.model.query(`
        delete from KQ_JOB_INFO where PARENT_BH in(
