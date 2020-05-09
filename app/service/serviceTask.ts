@@ -372,7 +372,7 @@ export default class TaskService extends Service {
       await app.redis.set(curServerId, 0);
     }
     await app.redis.set(`num_running_task`, 0);
-    await app.redis.set('last_time', 0);
+    await app.redis.set('last_new_task_run_time', 0);
   }
 
   /**
@@ -712,17 +712,17 @@ export default class TaskService extends Service {
 
     try {
       let newTaskTimeout = this.config.program.task_timeout;
-      let lastTime = await app.redis.get('last_time');
+      let lastNewTaskRunTime = await app.redis.get('last_new_task_run_time');
       let nowTime = (new Date()).getTime();
-      if (lastTime == null || lastTime == "0") {
-        await app.redis.set('last_time', (new Date()).getTime());
+      if (lastNewTaskRunTime == null || lastNewTaskRunTime == "0") {
+        // await app.redis.set('last_new_task_run_time', (new Date()).getTime());
         return jResult;
       }
-      let iLastTime = parseInt(lastTime);
+      let ilastNewTaskRunTime = parseInt(lastNewTaskRunTime);
 
-      if ((nowTime - iLastTime) > newTaskTimeout) {
+      if ((nowTime - ilastNewTaskRunTime) > newTaskTimeout) {
         jResult.data = 1;
-        await app.redis.set('last_time', (new Date()).getTime());
+        // await app.redis.set('last_new_task_run_time', (new Date()).getTime());
       }
 
       return jResult;

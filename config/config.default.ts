@@ -16,7 +16,7 @@ export default (appInfo: EggAppInfo) => {
 
   config.sequelize = {
     dialect: 'mssql',     // 数据库类型
-    database: 'scm_main_锦州石化',   // 数据库名称
+    database: 'scm_main_辽河石化0422',   // 数据库名称
     // database: 'scm_main_sjfx',   // 数据库名称
     timezone: '+08:00',
     pool: {
@@ -77,7 +77,7 @@ export default (appInfo: EggAppInfo) => {
 
 
   config.program = {
-    current_ip: '10.18.0.2',
+    current_ip: '10.16.0.2',
     current_port: 7001,
     connectTimeout: 1800000,
     max_running_task: 10,

@@ -53,6 +53,8 @@ export default class TaskService extends Service {
 
         // 新任务,执行同步(从主服务器向分析服务器)
         if (taskState == 0) {
+
+          
           let value = await app.redis.get(`num_running_task`);
           let numRunningTask;
           if (undefined === value || null === value) {
@@ -103,7 +105,7 @@ export default class TaskService extends Service {
             continue;
           }
 
-          await app.redis.set('last_time', (new Date()).getTime());
+          await app.redis.set('last_new_task_run_time', (new Date()).getTime());
           jResult = await ctx.service.serviceMain2Analyse.main2Analyse(
             parentBh, taskNo, serverId, userData, startDate, endDate, year, month
           );
