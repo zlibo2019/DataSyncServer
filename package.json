@@ -39,7 +39,7 @@
     "html-webpack-plugin": "^3.2.0",
     "increase-memory-limit": "^1.0.7",
     "install": "^0.12.2",
-    "jsdom": "^14.0.0",
+    "jsdom": "^16.5.0",
     "log4js": "^4.4.0",
     "npm": "^6.5.0",
     "optimize-css-assets-webpack-plugin": "^5.0.3",
